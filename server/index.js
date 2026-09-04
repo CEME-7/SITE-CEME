@@ -35,7 +35,7 @@ import {
 import { notifyArrival, notifyPaid, notifyShipped, shippedMessage, whatsappSendUrl } from "./notify.js";
 import { buildDigitalZip, canDownloadDigital, digitalDownloadsForOrder } from "./digital.js";
 import { buildCupomPdf, cupomFilename } from "./cupom.js";
-import { allocateOrderId, findOrder, initStore, ordersBackend, ordersDurable, readOrders, upsertOrder } from "./orders-store.js";
+import { allocateOrderId, findOrder, initStore, ordersBackend, ordersDurable, pingStore, readOrders, requirePostgres, upsertOrder } from "./orders-store.js";
 
 dotenv.config({ path: path.join(path.dirname(fileURLToPath(import.meta.url)), ".env") });
 
@@ -129,7 +129,10 @@ function requestOrigin(req) {
 }
 
 function siteUrl(req) {
-  const fromEnv = String(process.env.PUBLIC_SITE_URL || "").replace(/\/$/, "");
+  const fromEnv = String(process.env.PUBLIC_SITE_URL || process.env.RENDER_EXTERNAL_URL || "").replace(
+    /\/$/,
+    ""
+  );
   if (fromEnv) return fromEnv;
   return requestOrigin(req);
 }
@@ -236,14 +239,23 @@ function mpClient() {
   return new MercadoPagoConfig({ accessToken: MP_ACCESS_TOKEN });
 }
 
-app.get("/api/health", (_req, res) => {
-  res.json({
-    ok: true,
+app.get("/api/health", async (_req, res) => {
+  let database = true;
+  try {
+    await pingStore();
+  } catch {
+    database = false;
+  }
+  const storage = ordersBackend();
+  const ready = database && (!requirePostgres() || storage === "postgres");
+  res.status(ready ? 200 : 503).json({
+    ok: ready,
     demo: DEMO_PAYMENTS,
     sandbox: SANDBOX,
     mode: MODE,
-    storage: ordersBackend(),
+    storage,
     durable: ordersDurable(),
+    database,
   });
   void tickArrivalNotices();
 });
@@ -658,15 +670,21 @@ app.use((req, res, next) => {
 });
 app.use(express.static(SITE_ROOT, { index: "index.html", extensions: ["html"] }));
 
-await initStore().then(({ backend, durable }) => {
-  if (backend !== "postgres") {
-    console.warn(
-      durable
-        ? "Pedidos no disco /data. Ligue DATABASE_URL (Postgres) para o histórico não depender só do disco."
-        : "DATABASE_URL ausente e sem disco: o histórico de pedidos some no restart do Render."
-    );
-  }
-  app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Loja CEME em http://127.0.0.1:${PORT}  (mode=${MODE}, storage=${backend}, durable=${!!durable})`);
-  });
+let started;
+try {
+  started = await initStore();
+} catch (err) {
+  console.error(err.message || err);
+  process.exit(1);
+}
+const { backend, durable } = started;
+if (backend !== "postgres") {
+  console.warn(
+    durable
+      ? "Pedidos no disco /data. Ligue DATABASE_URL (Postgres) para o histórico não depender só do disco."
+      : "DATABASE_URL ausente e sem disco: o histórico de pedidos some no restart do Render."
+  );
+}
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`Loja CEME em http://127.0.0.1:${PORT}  (mode=${MODE}, storage=${backend}, durable=${!!durable})`);
 });

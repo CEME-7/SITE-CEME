@@ -1,6 +1,7 @@
-# Único serviço de hospedagem da CEME: Render.
-# Blueprints → Apply neste repositório cria o Postgres e o disco.
-# Sem isso, pedido, rastreio e gráfico somem no restart. Não use Supabase.
+# Hospedagem única da CEME: loja + API + Postgres no Render.
+# Dashboard → Blueprints → New Blueprint Instance → este repositório → Apply.
+# Isso cria o web service (ceme-checkout), o banco ceme-orders e um disco de backup.
+# Sem o Postgres o processo NÃO sobe (REQUIRE_POSTGRES=true). Não use Supabase.
 
 databases:
   - name: ceme-orders
@@ -29,18 +30,24 @@ services:
         fromDatabase:
           name: ceme-orders
           property: connectionString
+      - key: REQUIRE_POSTGRES
+        value: "true"
       - key: DEMO_PAYMENTS
         value: "false"
       - key: MP_TEST_MODE
         value: "false"
       - key: FREE_SHIPPING_FROM
         value: "360"
+      # Cole as chaves APP_USR- da conta Mercado Pago do cliente só no painel.
+      # Sem elas a loja sobe em modo demo (não cobra). Não cole token no GitHub.
       - key: MP_ACCESS_TOKEN
         sync: false
       - key: MP_PUBLIC_KEY
         sync: false
       - key: MP_WEBHOOK_SECRET
         sync: false
+      # Vazio = a loja e a API são o mesmo endereço do Render (mesmo origin).
+      # Só preencha se o HTML ficar no GitHub Pages ou num domínio à parte.
       - key: ALLOWED_ORIGINS
         sync: false
       - key: PUBLIC_SITE_URL
