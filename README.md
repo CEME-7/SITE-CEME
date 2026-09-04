@@ -6,14 +6,14 @@ Loja da Linha CEME (Corpo, Emoção, Mente e Espírito): catálogo, carrinho e c
 
 - Página inicial com fundadores, Método CEME, ferramentas e depoimentos
 - Aba **Produtos** com os **15 moduladores biofísicos** (60 ml), cada um com imagem, áudio e valor
-- Mapa Holográfico, Garrafadas em Cápsula e álbum digital no mesmo carrinho
+- Análise do Campo Morfogenético, álbum digital Déclic (R$ 64) e Neuro-conexão (R$ 222) no mesmo carrinho
 - O álbum na loja só toca **prévias curtas**. As faixas completas saem no rastreio (`pedidos.html`) depois do pagamento **aprovado** no Mercado Pago
 - Checkout no site: dados, entrega (Correios ou retirada em Brasília) e redirecionamento ao **Checkout Pro**
-- Frete **grátis neste teste** (produtos a **R$ 0,10** para validar o Mercado Pago)
+- Frete grátis a partir de **R$ 360** (ou retirada em Brasília)
 - WhatsApp `(61) 99929-1377` continua como alternativa no carrinho e no formulário de prescritora
 - Layout responsivo (celular, tablet e desktop)
 - Pagamento no **Mercado Pago** (Pix, cartão e boleto no site deles; o cartão não passa pela CEME)
-- Cada compra vira um **pedido identificado** (`CEME-1`, `CEME-2`…) com nome, itens e endereço para postar certo. O cliente acompanha em `pedidos.html` (prazo de 3 dias após o envio; avisos “saiu hoje” e “chega amanhã” por e-mail/WhatsApp). O dono vê vendas, pendentes e enviados em `envios.html` (usuário **Dono**, senha `ADMIN_KEY`). **Não há** cadastro de membros nem clube de promoção. Hospedagem e banco são **só o Render** (`render.yaml`).
+- Cada compra vira um **pedido identificado** (`CEME-1`, `CEME-2`…) com nome, itens e endereço para postar certo. O cliente acompanha em `pedidos.html` (prazo de 3 dias após o envio; avisos “saiu hoje” e “chega amanhã” por e-mail/WhatsApp). O dono vê vendas, pendentes e enviados em `envios.html` (usuário **Dono**, senha `ADMIN_KEY`). **Não há** cadastro de membros nem clube de promoção. Hospedagem, API e banco (**Postgres**) são **só o Render** (`render.yaml`).
 
 ## Como abrir no seu computador
 
@@ -49,21 +49,32 @@ Para testar o checkout com a API de teste:
 
 Nenhum valor é cobrado até as chaves `APP_USR-` (ou `TEST-`) estarem no `server/.env` (nunca no chat).
 
-## Teste na sua conta (R$ 0,10)
+## Produção: Render (site + API + Postgres)
 
-Os produtos estão a **R$ 0,10** e o frete de teste está grátis.
+A loja **não** depende do GitHub Pages para vender. O Blueprint sobe o HTML, a API e o **PostgreSQL** juntos.
+
+Checklist: **`docs/render-producao.md`**. Resumo:
+
+1. No Render do cliente: **Blueprints → Apply** neste repositório (`render.yaml`).
+2. Confira `/api/health`: `"storage":"postgres"`, `"durable":true`, `"database":true`.
+3. **Depois** cole as chaves `APP_USR-` da conta Mercado Pago **do cliente** só no painel (Environment). Sem elas a loja abre em modo demo, sem cobrar.
+4. Webhook: `https://SEU-SERVICO.onrender.com/api/webhooks/mercadopago`.
+
+Sem o Postgres do Blueprint o serviço **não sobe** (`REQUIRE_POSTGRES=true`). Pedido, rastreio e gráfico somem se o banco não existir.
+
+Não cole Access Token no GitHub nem neste chat.
+
+## Teste local com Mercado Pago (sandbox)
 
 1. Crie o app **Checkout Pro** em [Suas integrações](https://www.mercadopago.com.br/developers/panel/app)
 2. Cole **só no arquivo** `server/.env` (não manda no WhatsApp nem no Cursor):
 
 ```
-MP_ACCESS_TOKEN=TEST-...   # ou APP_USR- se for cobrança real de 10 centavos
+MP_ACCESS_TOKEN=TEST-...
 MP_PUBLIC_KEY=TEST-...
 DEMO_PAYMENTS=false
 MP_TEST_MODE=true
 ```
-
-Com `APP_USR-` use `MP_TEST_MODE=false` — cai **R$ 0,10 de verdade** na sua conta.
 
 3. Pare o servidor (Ctrl+C) e rode de novo: `bash abrir-local.sh`
 4. Abra **http://127.0.0.1:3001**, compre 1 item, pague no Mercado Pago
@@ -107,11 +118,11 @@ O dinheiro **não** cai no GitHub. Ele cai na **conta Mercado Pago em que você 
 8. Na conta **dele**, siga `docs/passar-para-o-dono.md`: Mercado Pago, Render e uma linha em `checkout-config.js`. Não cole token no GitHub nem no chat.
 9. Depois da venda aprovada, o valor aparece no [Mercado Pago](https://www.mercadopago.com.br) daquela conta. De lá vocês transferem para o banco.
 
-## Produção: só o Render, na conta do dono
+## Produção: conta do dono
 
-Não use a conta de teste para vender. O molde está em `render.yaml` e o passo a passo em **`docs/passar-para-o-dono.md`**.
+Não use a conta de teste para vender. Molde: `render.yaml`. Passos: **`docs/render-producao.md`** e **`docs/passar-para-o-dono.md`**.
 
-Na conta dele: Blueprint → Apply → colar as chaves `APP_USR-` só no painel. Conferir `/api/health` com `"storage":"postgres"`, `"durable":true` e `"sandbox":false`. Sem Postgres, pedido e gráfico somem no restart.
+Na conta dele: Blueprint → Apply (isso **já cria o Postgres**) → conferir health → **depois** colar as chaves `APP_USR-` só no painel. `/api/health` em produção: `"storage":"postgres"`, `"durable":true`, `"database":true`, `"sandbox":false`, `"mode":"live"`.
 
 O primeiro pedido no banco dele será `CEME-1`.
 
@@ -152,8 +163,8 @@ npm test
 ```
 
 1. App + **credenciais de produção** (`APP_USR-`) na conta que recebe
-2. Publique no Render dele com `DEMO_PAYMENTS=false` e `MP_TEST_MODE=false`
-3. Se a URL do Render mudar, uma linha em `checkout-config.js` (`RENDER_API_URL`)
+2. Publique no Render dele com o Blueprint (`REQUIRE_POSTGRES=true`, `DEMO_PAYMENTS=false`, `MP_TEST_MODE=false`)
+3. Se a loja estiver no próprio Render, **não** precisa mexer em `checkout-config.js`. Só o GitHub Pages usa o fallback `RENDER_API_URL`.
 
 ## Dados pessoais (LGPD)
 
@@ -163,9 +174,9 @@ Há política em `privacidade.html`, consentimento no checkout e no formulário,
 
 Isso reduz risco de vazamento e atende transparência e minimização. Não substitui advogado, DPO (se a lei exigir) nem o contrato com o Mercado Pago.
 
-## Publicar (GitHub Pages)
+## Publicar (GitHub Pages, opcional)
 
-O site estático pode ficar no GitHub Pages da conta **dele** (`https://USUARIO.github.io/Site/`). Passo a passo: `docs/passar-para-o-dono.md`.
+A produção é o **Render**. O Pages só serve o HTML (sem a pasta `server/`). Se usarem Pages, apontem `PUBLIC_SITE_URL` / `ALLOWED_ORIGINS` para esse domínio e mantenham a API no Render. Passo a passo: `docs/passar-para-o-dono.md`.
 
 **Uma vez no repo dele:**
 1. No GitHub: **Settings → General → Danger Zone** — deixe o repositório **público** (necessário no plano Free).

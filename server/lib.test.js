@@ -219,6 +219,14 @@ test("CORS: live exige lista; demo aceita vazio; whitelist fecha o resto", () =>
     allowedOrigins: ["http://127.0.0.1:8080"],
     serverOrigin: "http://127.0.0.1:3001",
   }), true);
+  assert.equal(
+    isOriginAllowed("https://ceme-checkout.onrender.com", {
+      mode: "live",
+      allowedOrigins: [],
+      serverOrigin: "https://ceme-checkout.onrender.com",
+    }),
+    true
+  );
 });
 
 test("rejeita payload com dados de cartão", () => {

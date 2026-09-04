@@ -19,6 +19,10 @@ function databaseUrl() {
   return String(process.env.DATABASE_URL || "").trim();
 }
 
+export function requirePostgres() {
+  return String(process.env.REQUIRE_POSTGRES || "").toLowerCase() === "true";
+}
+
 export function hasPersistentDisk() {
   const dir = String(process.env.ORDERS_DISK || DISK_DIR).trim();
   try {
@@ -92,7 +96,27 @@ async function withPg(fn) {
   return fn(pool);
 }
 
+export async function pingStore() {
+  if (!usePostgres()) {
+    if (requirePostgres()) {
+      const err = new Error("DATABASE_URL ausente");
+      err.code = "database_unavailable";
+      throw err;
+    }
+    return { backend: "file", ok: true };
+  }
+  await withPg((db) => db.query("SELECT 1 AS ok"));
+  return { backend: "postgres", ok: true };
+}
+
 export async function initStore() {
+  if (requirePostgres() && !usePostgres()) {
+    const err = new Error(
+      "DATABASE_URL obrigatório no Render. Aplique o Blueprint para criar o Postgres ceme-orders."
+    );
+    err.code = "database_required";
+    throw err;
+  }
   if (!usePostgres()) {
     const all = readFileOrders();
     writeFileOrders(all);

@@ -51,3 +51,15 @@ test("disco permanente conta o histórico como durável", () => {
   assert.equal(store.hasPersistentDisk(), false);
   assert.equal(store.ordersDurable(), false);
 });
+
+test("REQUIRE_POSTGRES sem DATABASE_URL impede a loja de subir", async () => {
+  process.env.REQUIRE_POSTGRES = "true";
+  process.env.DATABASE_URL = "";
+  assert.equal(store.requirePostgres(), true);
+  await assert.rejects(() => store.initStore(), { code: "database_required" });
+  await assert.rejects(() => store.pingStore(), { code: "database_unavailable" });
+  delete process.env.REQUIRE_POSTGRES;
+  const ping = await store.pingStore();
+  assert.equal(ping.backend, "file");
+  assert.equal(ping.ok, true);
+});
