@@ -419,8 +419,17 @@ let currentFilter = "all";
   async function load(adminKey) {
     document.getElementById("admin-error").hidden = true;
     showBoardError("");
+    const submit = document.getElementById("admin-submit");
+    if (submit) {
+      submit.disabled = true;
+      submit.textContent = "Entrando…";
+    }
     const base = apiBase();
     if (!base) {
+      if (submit) {
+        submit.disabled = false;
+        submit.textContent = "Entrar";
+      }
       showGateError("O painel usa a API do Render. Abra a loja pelo endereço publicado.");
       return;
     }
@@ -428,6 +437,10 @@ let currentFilter = "all";
     try {
       res = await fetch(`${base}/api/orders`, { headers: { "x-admin-key": adminKey } });
     } catch {
+      if (submit) {
+        submit.disabled = false;
+        submit.textContent = "Entrar";
+      }
       sessionStorage.removeItem(KEY_NAME);
       showApp(false);
       showGateError("Não deu para falar com a API desta loja. Abra https://ceme-checkout-4pgd.onrender.com/envios.html");
@@ -435,11 +448,15 @@ let currentFilter = "all";
     }
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
+      if (submit) {
+        submit.disabled = false;
+        submit.textContent = "Entrar";
+      }
       sessionStorage.removeItem(KEY_NAME);
       showApp(false);
       showGateError(
         data.error === "unauthorized"
-          ? "Senha incorreta. Use a senha ADMIN_KEY que você colou no Environment do Render."
+          ? "Senha incorreta. Use a ADMIN_KEY do Environment no Render (não é ceme-local)."
           : data.error === "admin_not_configured"
             ? "Falta ADMIN_KEY no Environment do Render."
             : "Não foi possível abrir o painel. Tente de novo."
@@ -462,6 +479,10 @@ let currentFilter = "all";
     }
     showStorageBanner({ storage, durable });
     showApp(true);
+    if (submit) {
+      submit.disabled = false;
+      submit.textContent = "Entrar";
+    }
     renderBoard();
   }
 

@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=51">
+  <link rel="stylesheet" href="style.css?v=64">
 </head>
 <body>
   <header class="site-header is-scrolled">
@@ -42,10 +42,11 @@
         <label for="admin-key">Senha</label>
         <div class="track-row">
           <input id="admin-key" type="password" required maxlength="80" autocomplete="current-password">
-          <button class="btn btn-gold" type="submit">Entrar</button>
+          <button class="btn btn-gold" id="admin-submit" type="submit">Entrar</button>
         </div>
+        <p class="owner-login-hint">A senha é a variável <strong>ADMIN_KEY</strong> no Render (Environment). Não é <code>ceme-local</code>.</p>
       </form>
-      <p class="error" id="admin-error" hidden></p>
+      <p class="error owner-gate-error" id="admin-error" hidden></p>
     </section>
 
     <section id="owner-app" hidden>
@@ -76,6 +77,6 @@
   </main>
 
   <script src="checkout-config.js?v=64"></script>
-  <script type="module" src="envios.js?v=64"></script>
+  <script type="module" src="envios.js?v=65"></script>
 </body>
 </html>

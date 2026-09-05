@@ -1925,6 +1925,21 @@ section {
   padding: 12px 14px;
   background: var(--cream);
 }
+.owner-login-hint {
+  margin: 14px 0 0;
+  color: var(--muted);
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+.owner-gate-error {
+  max-width: 460px;
+  margin: 0 0 24px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #fdecee;
+  color: #9b1c2c;
+  font-weight: 600;
+}
 .owner-toolbar {
   display: flex;
   justify-content: space-between;
