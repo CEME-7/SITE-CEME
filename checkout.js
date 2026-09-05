@@ -7,7 +7,10 @@
   const FREE_FROM_DEFAULT = 360;
 
   function apiBase() {
-    if (typeof location !== "undefined" && /\.onrender\.com$/i.test(location.hostname)) {
+    if (
+      typeof location !== "undefined" &&
+      (/\.onrender\.com$/i.test(location.hostname) || /(^|\.)familiaceme\.com\.br$/i.test(location.hostname))
+    ) {
       return location.origin;
     }
     const apiUrl = String(cfg().apiUrl || "").replace(/\/$/, "");
