@@ -54,6 +54,45 @@ function sslFor(url) {
   return { rejectUnauthorized: false };
 }
 
+export function isTransientPgError(err) {
+  const code = String(err?.code || "");
+  const message = String(err?.message || "");
+  return (
+    code === "ECONNREFUSED" ||
+    code === "ETIMEDOUT" ||
+    code === "ECONNRESET" ||
+    code === "EAI_AGAIN" ||
+    code === "ENOTFOUND" ||
+    code === "57P03" ||
+    code === "57P01" ||
+    /the database system is (starting up|not yet accepting connections)/i.test(message)
+  );
+}
+
+export async function retryUntil(fn, { attempts = 20, delayMs = 2000, isRetryable = isTransientPgError } = {}) {
+  let lastErr;
+  for (let i = 0; i < attempts; i += 1) {
+    try {
+      return await fn();
+    } catch (err) {
+      lastErr = err;
+      if (!isRetryable(err) || i === attempts - 1) throw err;
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
+    }
+  }
+  throw lastErr;
+}
+
+async function resetPool() {
+  if (!pool) return;
+  try {
+    await pool.end();
+  } catch {
+    // Pool may already be closed after a refused connection.
+  }
+  pool = undefined;
+}
+
 function ensureFile() {
   const file = ordersFile();
   fs.mkdirSync(path.dirname(file), { recursive: true });
@@ -98,17 +137,30 @@ export async function initStore() {
     writeFileOrders(all);
     return { backend: "file", durable: ordersDurable() };
   }
-  await withPg((db) =>
-    db.query(`
-      CREATE TABLE IF NOT EXISTS orders (
-        seq INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-        order_id TEXT UNIQUE NOT NULL,
-        payload JSONB NOT NULL DEFAULT '{}'::jsonb,
-        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-      )
-    `)
+  const attempts = Math.max(1, Number(process.env.PG_BOOT_ATTEMPTS || 30));
+  const delayMs = Math.max(50, Number(process.env.PG_BOOT_DELAY_MS || 2000));
+  await retryUntil(
+    async () => {
+      await resetPool();
+      await withPg((db) =>
+        db.query(`
+          CREATE TABLE IF NOT EXISTS orders (
+            seq INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+            order_id TEXT UNIQUE NOT NULL,
+            payload JSONB NOT NULL DEFAULT '{}'::jsonb,
+            updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+          )
+        `)
+      );
+    },
+    { attempts, delayMs }
   );
-  const leftover = readFileOrders();
+  let leftover = [];
+  try {
+    leftover = readFileOrders();
+  } catch {
+    leftover = [];
+  }
   for (const order of leftover) {
     if (order?.orderId) {
       await upsertOrder(order);

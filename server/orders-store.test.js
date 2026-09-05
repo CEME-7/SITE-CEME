@@ -51,3 +51,26 @@ test("disco permanente conta o histórico como durável", () => {
   assert.equal(store.hasPersistentDisk(), false);
   assert.equal(store.ordersDurable(), false);
 });
+
+test("recusa de conexão do Postgres conta como erro temporário", () => {
+  assert.equal(store.isTransientPgError({ code: "ECONNREFUSED" }), true);
+  assert.equal(store.isTransientPgError({ code: "28P01" }), false);
+});
+
+test("retryUntil espera erros temporários e segue", async () => {
+  let hits = 0;
+  const value = await store.retryUntil(
+    async () => {
+      hits += 1;
+      if (hits < 3) {
+        const err = new Error("connect ECONNREFUSED");
+        err.code = "ECONNREFUSED";
+        throw err;
+      }
+      return "ok";
+    },
+    { attempts: 5, delayMs: 1 }
+  );
+  assert.equal(value, "ok");
+  assert.equal(hits, 3);
+});

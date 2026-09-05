@@ -658,15 +658,29 @@ app.use((req, res, next) => {
 });
 app.use(express.static(SITE_ROOT, { index: "index.html", extensions: ["html"] }));
 
-await initStore().then(({ backend, durable }) => {
-  if (backend !== "postgres") {
-    console.warn(
-      durable
-        ? "Pedidos no disco /data. Ligue DATABASE_URL (Postgres) para o histórico não depender só do disco."
-        : "DATABASE_URL ausente e sem disco: o histórico de pedidos some no restart do Render."
+async function bootStore() {
+  try {
+    const { backend, durable } = await initStore();
+    if (backend !== "postgres") {
+      console.warn(
+        durable
+          ? "Pedidos no disco /data. Ligue DATABASE_URL (Postgres) para o histórico não depender só do disco."
+          : "DATABASE_URL ausente e sem disco: o histórico de pedidos some no restart do Render."
+      );
+    } else {
+      console.log("Pedidos: Postgres conectado.");
+    }
+  } catch (err) {
+    console.error(
+      `Pedidos: Postgres ainda não aceita conexão (${err.code || err.message}). Nova tentativa em 5s.`
     );
+    setTimeout(() => {
+      void bootStore();
+    }, 5000);
   }
-  app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Loja CEME em http://127.0.0.1:${PORT}  (mode=${MODE}, storage=${backend}, durable=${!!durable})`);
-  });
+}
+
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`Loja CEME em http://127.0.0.1:${PORT}  (mode=${MODE}, storage=${ordersBackend()}, durable=${ordersDurable()})`);
+  void bootStore();
 });
