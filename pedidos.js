@@ -1,5 +1,6 @@
 (function () {
   function apiBase() {
+    if (/\.onrender\.com$/i.test(location.hostname)) return location.origin;
     const apiUrl = String(window.CEME_CHECKOUT?.apiUrl || "").replace(/\/$/, "");
     if (!apiUrl) return "";
     if (location.protocol === "https:" && /^http:\/\//i.test(apiUrl)) return "";
