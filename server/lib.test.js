@@ -18,6 +18,7 @@ import {
   isPhysicalProduct,
   paymentMode,
   isOriginAllowed,
+  isBlockedStaticPath,
   hasForbiddenCardPayload,
   publicErrorCode,
   preferenceItems,
@@ -209,6 +210,19 @@ test("CORS: live exige lista; demo aceita vazio; whitelist fecha o resto", () =>
   assert.equal(isOriginAllowed("https://evil.example", { mode: "demo", allowedOrigins: [] }), true);
   assert.equal(
     isOriginAllowed("https://evil.example", {
+      mode: "sandbox",
+      allowedOrigins: ["https://loja.example"],
+    }),
+    false
+  );
+  assert.equal(isOriginAllowed("http://127.0.0.1:3001", {
+    mode: "live",
+    allowedOrigins: [],
+    serverOrigin: "http://127.0.0.1:3001",
+  }), true);
+  assert.equal(isOriginAllowed("https://evil.example", { mode: "demo", allowedOrigins: [] }), true);
+  assert.equal(
+    isOriginAllowed("https://evil.example", {
       mode: "demo",
       allowedOrigins: ["http://127.0.0.1:3001"],
     }),
@@ -219,6 +233,21 @@ test("CORS: live exige lista; demo aceita vazio; whitelist fecha o resto", () =>
     allowedOrigins: ["http://127.0.0.1:8080"],
     serverOrigin: "http://127.0.0.1:3001",
   }), true);
+});
+
+test("não publica .env, docs, yaml nem a pasta server", () => {
+  assert.equal(isBlockedStaticPath("/server/.env"), true);
+  assert.equal(isBlockedStaticPath("/server/.env.example"), true);
+  assert.equal(isBlockedStaticPath("/render.yaml"), true);
+  assert.equal(isBlockedStaticPath("/README.md"), true);
+  assert.equal(isBlockedStaticPath("/docs/passar-para-o-dono.md"), true);
+  assert.equal(isBlockedStaticPath("/.github/workflows/pages.yml"), true);
+  assert.equal(isBlockedStaticPath("/.cursor/mcp.json"), true);
+  assert.equal(isBlockedStaticPath("/abrir-local.sh"), true);
+  assert.equal(isBlockedStaticPath("/index.html"), false);
+  assert.equal(isBlockedStaticPath("/style.css"), false);
+  assert.equal(isBlockedStaticPath("/envios.html"), false);
+  assert.equal(isBlockedStaticPath("/assets/img/logo.png"), false);
 });
 
 test("rejeita payload com dados de cartão", () => {

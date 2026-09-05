@@ -11,6 +11,7 @@ import {
   hasForbiddenCardPayload,
   isHttpsUrl,
   isOriginAllowed,
+  isBlockedStaticPath,
   isValidWebhookSignature,
   notificationUrlFromOrigin,
   paymentMode,
@@ -648,15 +649,13 @@ async function rememberPayment(paymentId) {
   });
 }
 
-const blockedPrefixes = ["/server", "/.git", "/node_modules"];
 app.use((req, res, next) => {
-  const p = String(req.path || "").toLowerCase();
-  if (blockedPrefixes.some((prefix) => p === prefix || p.startsWith(`${prefix}/`))) {
+  if (isBlockedStaticPath(req.path)) {
     return res.status(404).end();
   }
   return next();
 });
-app.use(express.static(SITE_ROOT, { index: "index.html", extensions: ["html"] }));
+app.use(express.static(SITE_ROOT, { index: "index.html", extensions: ["html"], dotfiles: "deny" }));
 
 async function bootStore() {
   try {

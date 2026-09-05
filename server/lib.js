@@ -227,6 +227,45 @@ export function isOriginAllowed(origin, { allowedOrigins = [], mode = "demo", se
   return mode !== "live";
 }
 
+const BLOCKED_STATIC_PREFIXES = [
+  "/server",
+  "/.git",
+  "/node_modules",
+  "/.github",
+  "/.cursor",
+  "/docs",
+  "/scripts",
+];
+
+const BLOCKED_STATIC_NAMES = new Set([
+  "/render.yaml",
+  "/render.yml",
+  "/abrir-local.sh",
+  "/package.json",
+  "/package-lock.json",
+  "/readme.md",
+  "/license",
+  "/license.md",
+]);
+
+export function isBlockedStaticPath(pathname) {
+  const raw = String(pathname || "").split("?")[0];
+  let p = raw;
+  try {
+    p = decodeURIComponent(raw);
+  } catch {
+    return true;
+  }
+  p = p.toLowerCase();
+  if (!p.startsWith("/")) p = `/${p}`;
+  if (p.includes("\0") || p.includes("\\")) return true;
+  if (BLOCKED_STATIC_PREFIXES.some((prefix) => p === prefix || p.startsWith(`${prefix}/`))) return true;
+  if (p.includes("/.")) return true;
+  if (BLOCKED_STATIC_NAMES.has(p)) return true;
+  if (/\.(md|yml|yaml|sh|example|env|sql|lock)$/.test(p)) return true;
+  return false;
+}
+
 export function hasForbiddenCardPayload(body) {
   if (!body || typeof body !== "object") return false;
   if (body.card != null) return true;

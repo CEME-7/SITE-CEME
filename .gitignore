@@ -3,7 +3,13 @@ Thumbs.db
 *.log
 .idea/
 .vscode/
+.env
+.env.*
+!.env.example
+!**/.env.example
 server/.env
+**/.env
 server/node_modules/
+node_modules/
 server/data/*.json
 .pages-dist/

@@ -67,7 +67,7 @@ Com `APP_USR-` use `MP_TEST_MODE=false` — cai **R$ 0,10 de verdade** na sua co
 
 3. Pare o servidor (Ctrl+C) e rode de novo: `bash abrir-local.sh`
 4. Abra **http://127.0.0.1:3001**, compre 1 item, pague no Mercado Pago
-5. Confira o pedido no painel do dono (`envios.html`, usuário Dono, senha `ceme-local`)
+5. Confira o pedido no painel do dono (`envios.html`, usuário Dono, senha do `ADMIN_KEY` no seu `server/.env`)
 
 Com token `TEST-`, no Checkout Pro use comprador de teste e o cartão Visa `4235 6477 2802 5682`, validade `11/30`, CVV `123`, nome `APRO`.
 
