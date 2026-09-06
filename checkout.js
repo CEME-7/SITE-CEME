@@ -585,7 +585,7 @@
     event.preventDefault();
     event.stopPropagation();
     const hint = $("#checkout-track-hint");
-    if (hint) hint.textContent = t("checkoutMustSendWhatsApp");
+    if (hint) hint.textContent = t("checkoutWhatsAppOpened");
     const proof = $("#checkout-proof-wa");
     if (proof?.href && !proof.href.endsWith("#")) {
       try {
@@ -672,7 +672,7 @@
     if (hint) {
       hint.textContent = opened.opened
         ? t("checkoutWhatsAppOpened")
-        : t("checkoutMustSendWhatsApp");
+        : t("checkoutWhatsAppPopupBlocked");
     }
     // Obrigatório documentar no WhatsApp antes dos outros atalhos.
     setSuccessExtrasLocked(true);
@@ -977,7 +977,7 @@
     if (!modal) return;
     if (state.waProofPending && state.step === "done") {
       const hint = $("#checkout-track-hint");
-      if (hint) hint.textContent = t("checkoutMustSendWhatsApp");
+      if (hint) hint.textContent = t("checkoutWhatsAppOpened");
       const proof = $("#checkout-proof-wa");
       if (proof?.href && !proof.href.endsWith("#")) {
         try {
