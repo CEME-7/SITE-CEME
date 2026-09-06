@@ -34,7 +34,7 @@ services:
       - key: MP_TEST_MODE
         value: "false"
       - key: FREE_SHIPPING_FROM
-        value: "360"
+        value: "0"
       - key: MP_ACCESS_TOKEN
         sync: false
       - key: MP_PUBLIC_KEY

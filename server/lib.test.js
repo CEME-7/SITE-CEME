@@ -144,19 +144,19 @@ test("cartão de demonstração: aprovado, recusado e inválido", () => {
   assert.equal(demoCardDecision("1234"), "invalid");
 });
 
-test("frete por CEP, retirada grátis e frete grátis acima do limite", () => {
+test("frete zerado no modo de teste (todas as regiões e frete grátis desde R$ 0)", () => {
   assert.equal(shippingRegion("70863540"), "df");
   assert.equal(shippingRegion("01310100"), "sudeste");
-  assert.equal(calcShipping({ method: "pickup", hasPhysical: true, subtotal: 120, freeFrom: 360 }), 0);
+  assert.equal(calcShipping({ method: "pickup", hasPhysical: true, subtotal: 0.1, freeFrom: 0 }), 0);
   assert.equal(
-    calcShipping({ method: "delivery", cep: "70863540", hasPhysical: true, subtotal: 120, freeFrom: 360 }),
-    15
-  );
-  assert.equal(
-    calcShipping({ method: "delivery", cep: "70863540", hasPhysical: true, subtotal: 360, freeFrom: 360 }),
+    calcShipping({ method: "delivery", cep: "70863540", hasPhysical: true, subtotal: 0.1, freeFrom: 0 }),
     0
   );
-  assert.equal(calcShipping({ method: "delivery", hasPhysical: false, subtotal: 8 }), 0);
+  assert.equal(
+    calcShipping({ method: "delivery", cep: "01310100", hasPhysical: true, subtotal: 0.1, freeFrom: 0 }),
+    0
+  );
+  assert.equal(calcShipping({ method: "delivery", hasPhysical: false, subtotal: 0.1 }), 0);
 });
 
 test("álbum digital não entra no frete", () => {
@@ -289,16 +289,17 @@ test("rejeita payload com dados de cartão", () => {
   assert.equal(hasForbiddenCardPayload({ token: "tok", payer: { cpf: "52998224725" } }), false);
 });
 
-test("itens da preferência do Checkout Pro usam preço do catálogo e somam o frete", () => {
+test("itens da preferência do Checkout Pro usam preço do catálogo (frete zero no teste)", () => {
   const quote = quoteCart(products, [{ id: "neurocodigos", qty: 1 }], {
     shippingMethod: "delivery",
     cep: "01310100",
-    freeFrom: 360,
+    freeFrom: 0,
   });
   const items = preferenceItems(quote);
   assert.equal(items[0].unit_price, 120);
   assert.equal(items[0].currency_id, "BRL");
-  assert.ok(items.some((item) => item.id === "frete"));
+  assert.equal(quote.shipping, 0);
+  assert.equal(items.some((item) => item.id === "frete"), false);
 });
 
 test("não devolve mensagem crua de erro interno", () => {

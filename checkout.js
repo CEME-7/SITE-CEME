@@ -4,7 +4,8 @@
 
   const cfg = () => window.CEME_CHECKOUT || {};
   const shop = () => window.CEMEShop;
-  const FREE_FROM_DEFAULT = 360;
+  // TEMPORÁRIO (teste live): frete grátis desde R$ 0.
+  const FREE_FROM_DEFAULT = 0;
 
   function apiBase() {
     if (
@@ -102,16 +103,17 @@
   }
 
   function regionFee(region) {
+    // TEMPORÁRIO (teste live): frete R$ 0.
     return (
       {
-        df: 15,
-        centroOeste: 22,
-        sudeste: 25,
-        sul: 28,
-        nordeste: 32,
-        norte: 38,
-        unknown: 25,
-      }[region] || 25
+        df: 0,
+        centroOeste: 0,
+        sudeste: 0,
+        sul: 0,
+        nordeste: 0,
+        norte: 0,
+        unknown: 0,
+      }[region] || 0
     );
   }
 

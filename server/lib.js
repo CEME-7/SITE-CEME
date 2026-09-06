@@ -3,7 +3,8 @@ import { publicDigitalDownloads } from "./digital.js";
 
 export const MAX_QTY = 20;
 export const MIN_INSTALLMENT = 20;
-export const FREE_SHIPPING_FROM = 360;
+// TEMPORÁRIO (teste live): frete zerado. Restaurar 360 depois do teste.
+export const FREE_SHIPPING_FROM = 0;
 
 /** demo = API local sem Mercado Pago; sandbox = credenciais TEST; live = produção. */
 export function paymentMode({ accessToken = "", demoPayments, testMode } = {}) {
@@ -29,15 +30,16 @@ export function paidFulfillmentOrders(orders = []) {
   return orders.filter(isPaymentApproved);
 }
 
+// TEMPORÁRIO (teste live): frete R$ 0 em todas as regiões.
 export const SHIPPING_FEES = {
   pickup: 0,
-  df: 15,
-  centroOeste: 22,
-  sudeste: 25,
-  sul: 28,
-  nordeste: 32,
-  norte: 38,
-  unknown: 25,
+  df: 0,
+  centroOeste: 0,
+  sudeste: 0,
+  sul: 0,
+  nordeste: 0,
+  norte: 0,
+  unknown: 0,
 };
 
 export function onlyDigits(value) {
