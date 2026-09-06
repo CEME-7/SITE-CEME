@@ -13,6 +13,7 @@ import {
   isOriginAllowed,
   isBlockedStaticPath,
   isValidWebhookSignature,
+  isIpnNotification,
   notificationUrlFromOrigin,
   paymentMode,
   preferenceItems,
@@ -536,9 +537,44 @@ app.get("/api/order/:orderId", rateLimit, async (req, res) => {
   }
 });
 
+/** Reconsulta o MP para pedidos ainda não aprovados (ex.: webhook IPN rejeitado). */
+async function syncPendingOrdersFromMp(orders = []) {
+  if (DEMO_PAYMENTS || !MP_ACCESS_TOKEN) return orders;
+  const pending = orders
+    .filter((order) => order?.orderId && !isPaymentApproved(order))
+    .slice(-25);
+  if (!pending.length) return orders;
+
+  const payment = new Payment(mpClient());
+  const byId = new Map(orders.map((order) => [order.orderId, order]));
+  for (const order of pending) {
+    try {
+      const found = await payment.search({
+        options: {
+          external_reference: order.orderId,
+          sort: "date_created",
+          criteria: "desc",
+        },
+      });
+      const results = found.results || [];
+      const current = results.find((item) => item.status === "approved") || results[0];
+      if (!current) continue;
+      const saved = await rememberOrder(order.orderId, {
+        status: current.status || "unknown",
+        paymentId: current.id,
+      });
+      if (saved) byId.set(order.orderId, saved);
+    } catch (err) {
+      console.error("admin_sync_payment_failed", order.orderId, publicErrorCode(err));
+    }
+  }
+  return orders.map((order) => byId.get(order.orderId) || order);
+}
+
 app.get("/api/orders", rateLimit, async (req, res) => {
   if (!requireAdmin(req, res)) return;
-  const listed = paidFulfillmentOrders(await readOrders());
+  const refreshed = await syncPendingOrdersFromMp(await readOrders());
+  const listed = paidFulfillmentOrders(refreshed);
   const orders = [];
   for (const order of listed) {
     orders.push(adminOrderView(await maybeNotifyArrival(order)));
@@ -634,31 +670,28 @@ app.post("/api/orders/:orderId/shipped", rateLimit, async (req, res) => {
   });
 });
 
-app.post("/api/webhooks/mercadopago", async (req, res) => {
-  const resource = webhookResource(req.body || {}, req.query || {});
-  const dataId = resource.id || String(req.query["data.id"] || "").trim();
-  if (MODE === "live") {
-    if (!MP_WEBHOOK_SECRET) {
+async function handleMercadoPagoWebhook(req, res) {
+  const body = req.body || {};
+  const query = req.query || {};
+  const resource = webhookResource(body, query);
+  const dataId = resource.id || String(query["data.id"] || "").trim();
+  const ipn = isIpnNotification(body, query);
+
+  // Webhook moderno exige HMAC. IPN legado não valida assinatura — a prova é a consulta na API do MP.
+  if (!ipn) {
+    if (MODE === "live" && !MP_WEBHOOK_SECRET) {
       return res.status(401).json({ error: "invalid_signature" });
     }
-    const ok = isValidWebhookSignature({
-      xSignature: req.get("x-signature"),
-      xRequestId: req.get("x-request-id"),
-      dataId,
-      secret: MP_WEBHOOK_SECRET,
-    });
-    if (!ok) {
-      return res.status(401).json({ error: "invalid_signature" });
-    }
-  } else if (MP_WEBHOOK_SECRET) {
-    const ok = isValidWebhookSignature({
-      xSignature: req.get("x-signature"),
-      xRequestId: req.get("x-request-id"),
-      dataId,
-      secret: MP_WEBHOOK_SECRET,
-    });
-    if (!ok) {
-      return res.status(401).json({ error: "invalid_signature" });
+    if (MP_WEBHOOK_SECRET) {
+      const ok = isValidWebhookSignature({
+        xSignature: req.get("x-signature"),
+        xRequestId: req.get("x-request-id"),
+        dataId,
+        secret: MP_WEBHOOK_SECRET,
+      });
+      if (!ok) {
+        return res.status(401).json({ error: "invalid_signature" });
+      }
     }
   }
 
@@ -672,14 +705,17 @@ app.post("/api/webhooks/mercadopago", async (req, res) => {
     console.error("webhook_failed", publicErrorCode(err));
   }
   return res.status(200).json({ ok: true });
-});
+}
+
+app.post("/api/webhooks/mercadopago", handleMercadoPagoWebhook);
+app.get("/api/webhooks/mercadopago", handleMercadoPagoWebhook);
 
 async function applyMercadoPagoNotification(resource) {
   const topic = String(resource.topic || "");
   const id = String(resource.id || "").trim();
   if (!id) return;
 
-  if (topic.includes("merchant_order")) {
+  if (topic.includes("merchant_order") || topic.includes("merchant_orders")) {
     const order = await new MerchantOrder(mpClient()).get({ merchantOrderId: id });
     const payments = Array.isArray(order.payments) ? order.payments : [];
     const paid = payments.find((item) => item.status === "approved") || payments[0];

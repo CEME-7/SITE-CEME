@@ -23,6 +23,7 @@ import {
   publicErrorCode,
   preferenceItems,
   webhookResource,
+  isIpnNotification,
   isValidWebhookSignature,
   webhookManifest,
   notificationUrlFromOrigin,
@@ -353,6 +354,29 @@ test("lê id do pagamento no webhook e no IPN", () => {
     id: "888",
   });
   assert.equal(webhookResource({ type: "payment", data: { id: "7" } }, { id: "1" }).id, "7");
+  assert.deepEqual(
+    webhookResource(
+      { resource: "https://api.mercadolibre.com/collections/notifications/777", topic: "payment" },
+      { topic: "payment", id: "777" }
+    ),
+    { topic: "payment", id: "777" }
+  );
+  assert.equal(
+    webhookResource(
+      { resource: "https://api.mercadolibre.com/merchant_orders/555", topic: "merchant_order" },
+      {}
+    ).id,
+    "555"
+  );
+  assert.equal(isIpnNotification({}, { topic: "payment", id: "888" }), true);
+  assert.equal(
+    isIpnNotification({ topic: "merchant_order", resource: "https://api.mercadolibre.com/merchant_orders/1" }, {}),
+    true
+  );
+  assert.equal(
+    isIpnNotification({ type: "payment", data: { id: "9" } }, { "data.id": "9", type: "payment" }),
+    false
+  );
 });
 
 test("valida HMAC do webhook do Mercado Pago", () => {
@@ -389,7 +413,7 @@ test("só gera notification_url em HTTPS da API", () => {
   assert.equal(notificationUrlFromOrigin("http://127.0.0.1:3001"), "");
   assert.equal(
     notificationUrlFromOrigin("https://ceme-checkout.onrender.com"),
-    "https://ceme-checkout.onrender.com/api/webhooks/mercadopago"
+    "https://ceme-checkout.onrender.com/api/webhooks/mercadopago?source_news=webhooks"
   );
   assert.equal(
     publicApiOrigin({
