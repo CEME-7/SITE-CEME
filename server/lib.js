@@ -392,17 +392,29 @@ export function publicApiOrigin({
 export function notificationUrlFromOrigin(origin) {
   const base = String(origin || "").trim().replace(/\/$/, "");
   if (!isHttpsUrl(base)) return "";
-  return `${base}/api/webhooks/mercadopago`;
+  // source_news=webhooks evita IPN legado sem assinatura válida.
+  return `${base}/api/webhooks/mercadopago?source_news=webhooks`;
 }
 
 export function webhookResource(body = {}, query = {}) {
   const topic = String(query.topic || query.type || body.type || body.topic || "")
     .trim()
     .toLowerCase();
-  const id = String(
+  let id = String(
     query["data.id"] || query.data_id || body?.data?.id || query.id || ""
   ).trim();
+  if (!id && body?.resource) {
+    const match = String(body.resource).match(/(\d+)\/?$/);
+    if (match) id = match[1];
+  }
   return { topic, id };
+}
+
+/** IPN legado: topic+id (sem data.id). A assinatura HMAC desses avisos não valida. */
+export function isIpnNotification(body = {}, query = {}) {
+  const hasTopic = Boolean(query.topic || body.topic);
+  const hasTypeData = Boolean((query.type || body.type) && (query["data.id"] || body?.data?.id));
+  return hasTopic && !hasTypeData;
 }
 
 export function webhookManifest({ dataId = "", requestId = "", ts = "" } = {}) {
