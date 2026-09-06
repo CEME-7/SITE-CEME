@@ -2383,3 +2383,20 @@ section {
     border-radius: 18px;
   }
 }
+
+
+/* Obrigatório enviar WhatsApp antes dos atalhos finais */
+.is-wa-locked {
+  opacity: 0.45;
+  cursor: not-allowed;
+  filter: grayscale(0.25);
+}
+.checkout-wa-mandatory {
+  margin: 0.75rem 0 0.5rem;
+  font-size: 0.95rem;
+  color: var(--burgundy, #5c1f2e);
+  font-weight: 600;
+}
+#checkout-wa-sent {
+  margin-top: 0.5rem;
+}
