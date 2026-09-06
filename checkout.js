@@ -973,7 +973,14 @@
     if (!ok) {
         const verifyBtn = document.getElementById("checkout-verify-pay");
         if (verifyBtn) verifyBtn.hidden = false;
-        setPayMessage(t("checkoutWaitingPix"), "error");
+        const key = saved.token || orderPublicKey(saved.orderId);
+        if (key) showTrackingCredentials(saved.orderId, key, { pending: true });
+        setPayMessage(
+          t("checkoutWaitingPix") +
+            " " +
+            t("checkoutPendingKeepKey").replace("{order}", saved.orderId).replace("{key}", key || "—"),
+          "error"
+        );
       }
   });
 
