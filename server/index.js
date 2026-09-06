@@ -34,6 +34,7 @@ import {
   correiosTrackingUrl,
   isPaymentApproved,
   paidFulfillmentOrders,
+  paymentPatchFromMp,
   normalizeTrackingCode,
   unpaidPaymentError,
   deliveryProgress,
@@ -498,7 +499,7 @@ app.get("/api/order/:orderId", rateLimit, async (req, res) => {
         return res.status(404).json({ error: "not_found" });
       }
       paymentMatched = String(result.external_reference || "") === orderId;
-      latest = (await rememberOrder(orderId, { status: result.status || "unknown", paymentId })) || latest;
+      latest = (await rememberOrder(orderId, paymentPatchFromMp(result))) || latest;
     } else if (!isPaymentApproved(stored) && canAccessPublicOrder(stored, { publicKey: requestPublicKey(req) })) {
       const found = await payment.search({
         options: {
@@ -511,10 +512,7 @@ app.get("/api/order/:orderId", rateLimit, async (req, res) => {
       const approved = results.find((item) => item.status === "approved");
       const current = approved || results[0];
       if (current) {
-        latest = (await rememberOrder(orderId, {
-          status: current.status || "unknown",
-          paymentId: current.id,
-        })) || latest;
+        latest = (await rememberOrder(orderId, paymentPatchFromMp(current))) || latest;
       }
     }
     if (!hasPublicOrderAccess(latest, req, { paymentMatched })) {
@@ -559,10 +557,7 @@ async function syncPendingOrdersFromMp(orders = []) {
       const results = found.results || [];
       const current = results.find((item) => item.status === "approved") || results[0];
       if (!current) continue;
-      const saved = await rememberOrder(order.orderId, {
-        status: current.status || "unknown",
-        paymentId: current.id,
-      });
+      const saved = await rememberOrder(order.orderId, paymentPatchFromMp(current));
       if (saved) byId.set(order.orderId, saved);
     } catch (err) {
       console.error("admin_sync_payment_failed", order.orderId, publicErrorCode(err));
@@ -734,10 +729,7 @@ async function rememberPayment(paymentId) {
   const digits = String(paymentId || "").replace(/\D/g, "");
   if (!digits) return;
   const result = await new Payment(mpClient()).get({ id: digits });
-  await rememberOrder(result.external_reference, {
-    status: result.status || "unknown",
-    paymentId: digits,
-  });
+  await rememberOrder(result.external_reference, paymentPatchFromMp(result));
 }
 
 app.use((req, res, next) => {

@@ -38,6 +38,8 @@ import {
   formatAddress,
   normalizeTrackingCode,
   isPaymentApproved,
+  isPixPayment,
+  paymentPatchFromMp,
   unpaidPaymentError,
   paidFulfillmentOrders,
   sanitizeStoredOrder,
@@ -642,4 +644,33 @@ test("prazo de entrega de 3 dias em Brasília, com saiu hoje e chega amanhã", (
   assert.equal(view.phase, deliveryProgress(order).phase);
   assert.ok(view.headline);
   assert.equal(view.etaLabel, "29/08/2026");
+});
+
+
+test("detecta Pix e monta patch do Mercado Pago", () => {
+  assert.equal(isPixPayment({ paymentType: "bank_transfer", paymentMethod: "pix" }), true);
+  assert.equal(isPixPayment({ paymentType: "credit_card", paymentMethod: "visa" }), false);
+  assert.deepEqual(
+    paymentPatchFromMp({
+      id: "123",
+      status: "approved",
+      payment_type_id: "bank_transfer",
+      payment_method_id: "pix",
+    }),
+    {
+      status: "approved",
+      paymentType: "bank_transfer",
+      paymentMethod: "pix",
+      paymentId: "123",
+    }
+  );
+  const view = publicOrderView({
+    orderId: "CEME-9",
+    status: "approved",
+    paymentType: "bank_transfer",
+    paymentMethod: "pix",
+    publicKey: "key-9",
+  });
+  assert.equal(view.isPix, true);
+  assert.equal(view.paymentMethod, "pix");
 });

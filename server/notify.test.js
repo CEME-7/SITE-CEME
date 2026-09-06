@@ -8,6 +8,7 @@ import {
   paidMessage,
   paidEmailSubject,
   newSaleMessage,
+  customerStoreProofMessage,
   whatsappSendUrl,
   gmailConfigured,
   whatsappApiConfigured,
@@ -98,7 +99,32 @@ test("monta o aviso de pagamento recebido", () => {
   assert.match(text, /R\$\s*120/);
   assert.match(text, /pedidos\.html\?pedido=CEME-1/);
   assert.equal(paidEmailSubject("CEME-1"), "Recebemos o pagamento do seu pedido CEME-1");
-  assert.match(newSaleMessage({ name: "Maria Silva", orderId: "CEME-1", total: 120 }), /Nova venda CEME-1/);
+  assert.match(newSaleMessage({ name: "Maria Silva", orderId: "CEME-1", total: 120, paymentMethod: "pix", paymentType: "bank_transfer", publicKey: "abc" }), /Nova venda CEME-1/);
+  assert.match(newSaleMessage({ name: "Maria Silva", orderId: "CEME-1", total: 120, paymentMethod: "pix", paymentType: "bank_transfer", publicKey: "abc" }), /Pix/);
+  assert.match(newSaleMessage({ name: "Maria Silva", orderId: "CEME-1", total: 120, paymentMethod: "pix", paymentType: "bank_transfer", publicKey: "abc" }), /Chave de rastreio: abc/);
+  const pixProof = customerStoreProofMessage({
+    name: "Maria Silva",
+    orderId: "CEME-1",
+    total: 120,
+    publicKey: "abc-key",
+    trackingUrl: "https://loja/pedidos.html?pedido=CEME-1&k=abc-key",
+    paymentType: "bank_transfer",
+    paymentMethod: "pix",
+  });
+  assert.match(pixProof, /Comprovante Pix — pedido CEME-1/);
+  assert.match(pixProof, /Chave de rastreio: abc-key/);
+  assert.match(pixProof, /pedidos\.html\?pedido=CEME-1/);
+  const cardProof = customerStoreProofMessage({
+    name: "Maria Silva",
+    orderId: "CEME-2",
+    total: 88,
+    publicKey: "card-key",
+    paymentType: "credit_card",
+    paymentMethod: "visa",
+  });
+  assert.match(cardProof, /Pagamento confirmado — pedido CEME-2/);
+  assert.match(cardProof, /visa/);
+  assert.doesNotMatch(cardProof, /Comprovante Pix/);
   const album = paidMessage({
     name: "Maria Silva",
     orderId: "CEME-1",

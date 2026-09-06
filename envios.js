@@ -200,6 +200,9 @@ let currentFilter = "all";
       </div>
       <h2>${escapeHtml(order.orderId)}</h2>
       <p><strong>${escapeHtml(order.customerName || "Cliente")}</strong></p>
+      <p class="order-pay">${escapeHtml(order.isPix ? "Pix" : order.paymentMethod || order.paymentType || "Pagamento")}${
+        order.publicKey ? ` · chave ${escapeHtml(order.publicKey)}` : ""
+      }</p>
       ${contactBlock(order)}
       ${addressBlock(order)}
       <ul>${items}</ul>
