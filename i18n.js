@@ -383,7 +383,9 @@ const I18N = {
     "checkoutTrackLink": "Acompanhar envio",
     "checkoutPayBoleto": "Boleto",
     "checkoutCupomPdf": "Baixar cupom PDF",
-    "checkoutNotConfirmed": "O Mercado Pago não confirmou o pagamento. O pedido só aparece depois da aprovação. Tente de novo no Checkout Pro."
+    "checkoutNotConfirmed": "O Mercado Pago não confirmou o pagamento. O pedido só aparece depois da aprovação. Tente de novo no Checkout Pro.",
+    "checkoutWaitingPix": "O Pix pode levar alguns segundos. Clique em ",
+    "checkoutVerifyPay": "Já paguei — verificar"Já paguei — verificar" para confirmar."
   },
   en: {
     "htmlLang": "en",
@@ -760,7 +762,9 @@ const I18N = {
     "checkoutTrackLink": "Track shipment",
     "checkoutPayBoleto": "Boleto",
     "checkoutCupomPdf": "Download PDF coupon",
-    "checkoutNotConfirmed": "Mercado Pago did not confirm this payment. The order only appears after approval. Try Checkout Pro again."
+    "checkoutNotConfirmed": "Mercado Pago did not confirm this payment. The order only appears after approval. Try Checkout Pro again.",
+    "checkoutWaitingPix": "Pix may take a few seconds. Tap ",
+    "checkoutVerifyPay": "I already paid — check"I already paid — check" to confirm."
   },
   es: {
     "htmlLang": "es",
@@ -1140,7 +1144,9 @@ const I18N = {
     "checkoutTrackLink": "Seguir envío",
     "checkoutPayBoleto": "Boleto",
     "checkoutCupomPdf": "Descargar cupón PDF",
-    "checkoutNotConfirmed": "Mercado Pago no confirmó el pago. El pedido solo aparece después de la aprobación. Intente de nuevo en Checkout Pro."
+    "checkoutNotConfirmed": "Mercado Pago no confirmó el pago. El pedido solo aparece después de la aprobación. Intente de nuevo en Checkout Pro.",
+    "checkoutWaitingPix": "El Pix puede tardar unos segundos. Pulse ",
+    "checkoutVerifyPay": "Ya pagué — verificar"Ya pagué — verificar" para confirmar."
   },
   de: {
     "htmlLang": "de",
@@ -1520,7 +1526,9 @@ const I18N = {
     "checkoutTrackLink": "Sendung verfolgen",
     "checkoutPayBoleto": "Boleto",
     "checkoutCupomPdf": "PDF-Beleg herunterladen",
-    "checkoutNotConfirmed": "Mercado Pago hat die Zahlung nicht bestätigt. Die Bestellung erscheint erst nach Freigabe. Versuchen Sie Checkout Pro erneut."
+    "checkoutNotConfirmed": "Mercado Pago hat die Zahlung nicht bestätigt. Die Bestellung erscheint erst nach Freigabe. Versuchen Sie Checkout Pro erneut.",
+    "checkoutWaitingPix": "Pix kann einige Sekunden dauern. Tippen Sie auf ",
+    "checkoutVerifyPay": "Bereits bezahlt — prüfen"Bereits bezahlt — prüfen"."
   },
   fr: {
     "htmlLang": "fr",
@@ -1900,6 +1908,8 @@ const I18N = {
     "checkoutTrackLink": "Suivre l’envoi",
     "checkoutPayBoleto": "Boleto",
     "checkoutCupomPdf": "Télécharger le coupon PDF",
-    "checkoutNotConfirmed": "Mercado Pago n’a pas confirmé le paiement. La commande n’apparaît qu’après approbation. Réessayez Checkout Pro."
+    "checkoutNotConfirmed": "Mercado Pago n’a pas confirmé le paiement. La commande n’apparaît qu’après approbation. Réessayez Checkout Pro.",
+    "checkoutWaitingPix": "Le Pix peut prendre quelques secondes. Appuyez sur ",
+    "checkoutVerifyPay": "J’ai déjà payé — vérifier"J’ai déjà payé — vérifier"."
   }
 };
