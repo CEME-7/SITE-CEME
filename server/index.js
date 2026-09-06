@@ -24,6 +24,10 @@ import {
   fulfillmentSnapshot,
   publicOrderView,
   adminOrderView,
+  createAccessToken,
+  orderAccessGranted,
+  withAccessQuery,
+  timingSafeEqualText,
   correiosTrackingUrl,
   isPaymentApproved,
   paidFulfillmentOrders,
@@ -74,7 +78,7 @@ app.use((req, res, next) => {
   res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
   res.setHeader(
     "Content-Security-Policy",
-    "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self'; img-src 'self' data: https:; media-src 'self'; font-src 'self' https://fonts.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; script-src 'self'; connect-src 'self' https:; frame-src https://www.youtube.com https://www.youtube-nocookie.com https://www.mercadopago.com https://www.mercadopago.com.br https://http2.mlstatic.com"
+    "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self'; img-src 'self' data: https:; media-src 'self'; font-src 'self' https://fonts.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; script-src 'self'; connect-src 'self' https://viacep.com.br; frame-src https://www.youtube.com https://www.youtube-nocookie.com https://www.mercadopago.com https://www.mercadopago.com.br https://http2.mlstatic.com"
   );
   if (req.secure || req.headers["x-forwarded-proto"] === "https") {
     res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
@@ -104,15 +108,30 @@ function rateLimit(req, res, next) {
   const ip = req.ip || "local";
   const now = Date.now();
   const windowMs = 60_000;
-  const max = req.path.startsWith("/api/checkout") || req.path.startsWith("/api/order") ? 12 : 30;
-  const current = hits.get(ip) || [];
+  const admin = req.path.startsWith("/api/orders");
+  const buy = req.path.startsWith("/api/checkout") || req.path.startsWith("/api/order");
+  const max = admin ? 8 : buy ? 12 : 30;
+  const bucket = `${ip}:${admin ? "admin" : buy ? "buy" : "api"}`;
+  const current = hits.get(bucket) || [];
   const recent = current.filter((time) => now - time < windowMs);
   recent.push(now);
-  hits.set(ip, recent);
+  hits.set(bucket, recent);
   if (recent.length > max) {
     return res.status(429).json({ error: "rate_limited" });
   }
   return next();
+}
+
+function requestOrderAccess(req) {
+  return {
+    token: String(req.query.t || req.get("x-order-token") || "").trim(),
+    email: String(req.query.email || "").trim(),
+  };
+}
+
+function hasPublicOrderAccess(order, req, { paymentMatched = false } = {}) {
+  if (paymentMatched) return true;
+  return orderAccessGranted(order, requestOrderAccess(req));
 }
 
 function quoteFromBody(body) {
@@ -151,10 +170,21 @@ async function rememberOrder(orderId, patch) {
   const id = String(orderId || "").slice(0, 80);
   if (!/^CEME-[A-Z0-9-]+$/i.test(id)) return null;
   const prev = (await findOrder(id)) || { orderId: id };
-  const saved = await upsertOrder({ ...prev, ...patch, orderId: id, updatedAt: Date.now() });
+  const accessToken =
+    String(patch?.accessToken || prev.accessToken || "").trim() || createAccessToken();
+  const saved = await upsertOrder({
+    ...prev,
+    ...patch,
+    orderId: id,
+    accessToken,
+    updatedAt: Date.now(),
+  });
   if (isPaymentApproved(saved) && !isPaymentApproved(prev) && !prev.notifyPaid) {
     const shop = String(process.env.PUBLIC_SITE_URL || "").replace(/\/$/, "");
-    const trackingUrl = shop ? `${shop}/pedidos.html?pedido=${encodeURIComponent(id)}` : "";
+    const trackingUrl = withAccessQuery(
+      shop ? `${shop}/pedidos.html?pedido=${encodeURIComponent(id)}` : "",
+      saved.accessToken
+    );
     try {
       const downloads = digitalDownloadsForOrder(saved);
       const apiOrigin = publicApiOrigin({
@@ -164,7 +194,10 @@ async function rememberOrder(orderId, patch) {
       }) || shop;
       const downloadUrl =
         downloads.length && apiOrigin
-          ? `${apiOrigin}/api/order/${encodeURIComponent(id)}/download/${encodeURIComponent(downloads[0].id)}`
+          ? withAccessQuery(
+              `${apiOrigin}/api/order/${encodeURIComponent(id)}/download/${encodeURIComponent(downloads[0].id)}`,
+              saved.accessToken
+            )
           : "";
       const notify = await notifyPaid(saved, { trackingUrl, downloadUrl });
       return upsertOrder({
@@ -226,7 +259,7 @@ function requireAdmin(req, res) {
     return false;
   }
   const got = String(req.get("x-admin-key") || "").trim();
-  if (got !== ADMIN_KEY) {
+  if (!timingSafeEqualText(got, ADMIN_KEY)) {
     res.status(401).json({ error: "unauthorized" });
     return false;
   }
@@ -283,22 +316,22 @@ app.post("/api/checkout", rateLimit, async (req, res) => {
     const payer = validatePayer(req.body?.payer || {}, { requireAddress, requireBirthDate });
     const orderId = await allocateOrderId();
     const shop = siteUrl(req);
-    const back = `${shop}/index.html`;
+    const snapshot = fulfillmentSnapshot({ orderId, quote, payer, status: DEMO_PAYMENTS ? "approved" : "pending" });
+    const saved = await rememberOrder(orderId, snapshot);
+    const accessToken = saved?.accessToken || snapshot.accessToken;
+    const back = withAccessQuery(`${shop}/index.html`, accessToken);
     const items = preferenceItems(quote);
 
     if (DEMO_PAYMENTS) {
-      await rememberOrder(
-        orderId,
-        fulfillmentSnapshot({ orderId, quote, payer, status: "approved" })
-      );
       await rememberOrder(orderId, { demo: true });
       return res.json({
         demo: true,
         orderId,
+        accessToken,
         trackingId: orderId,
         total: quote.total,
         shipping: quote.shipping,
-        checkoutUrl: `${back}?mp=demo&external_reference=${encodeURIComponent(orderId)}`,
+        checkoutUrl: `${back}${back.includes("?") ? "&" : "?"}mp=demo&external_reference=${encodeURIComponent(orderId)}`,
       });
     }
 
@@ -356,10 +389,10 @@ app.post("/api/checkout", rateLimit, async (req, res) => {
       return res.status(502).json({ error: "checkout_failed" });
     }
 
-    await rememberOrder(orderId, fulfillmentSnapshot({ orderId, quote, payer, status: "pending" }));
     await rememberOrder(orderId, { preferenceId: result.id });
     return res.json({
       orderId,
+      accessToken,
       trackingId: orderId,
       total: quote.total,
       shipping: quote.shipping,
@@ -386,6 +419,12 @@ app.post("/api/checkout", rateLimit, async (req, res) => {
   }
 });
 
+app.get("/robots.txt", (_req, res) => {
+  res
+    .type("text/plain")
+    .send("User-agent: *\nAllow: /\nDisallow: /envios.html\nDisallow: /envios.js\nDisallow: /api/\n");
+});
+
 app.get("/api/order/:orderId/download/:productId", rateLimit, async (req, res) => {
   const orderId = String(req.params.orderId || "").slice(0, 80);
   const productId = String(req.params.productId || "").slice(0, 80);
@@ -393,9 +432,8 @@ app.get("/api/order/:orderId/download/:productId", rateLimit, async (req, res) =
     return res.status(400).json({ error: "invalid_payment" });
   }
   const stored = await findOrder(orderId);
-  if (!stored) return res.status(404).json({ error: "not_found" });
-  if (!isPaymentApproved(stored)) {
-    return res.status(404).json({ error: unpaidPaymentError(stored.status) });
+  if (!stored || !hasPublicOrderAccess(stored, req) || !isPaymentApproved(stored)) {
+    return res.status(404).json({ error: "not_found" });
   }
   if (!canDownloadDigital(stored, productId)) {
     return res.status(404).json({ error: "not_found" });
@@ -419,9 +457,8 @@ app.get("/api/order/:orderId/cupom.pdf", rateLimit, async (req, res) => {
     return res.status(400).json({ error: "invalid_payment" });
   }
   const stored = await findOrder(orderId);
-  if (!stored) return res.status(404).json({ error: "not_found" });
-  if (!isPaymentApproved(stored)) {
-    return res.status(404).json({ error: unpaidPaymentError(stored?.status) || "not_found" });
+  if (!stored || !hasPublicOrderAccess(stored, req) || !isPaymentApproved(stored)) {
+    return res.status(404).json({ error: "not_found" });
   }
   try {
     const pdf = await buildCupomPdf(publicOrderView(stored), {
@@ -442,25 +479,29 @@ app.get("/api/order/:orderId", rateLimit, async (req, res) => {
     return res.status(400).json({ error: "invalid_payment" });
   }
   const stored = await findOrder(orderId);
+  const paymentId = String(req.query.payment_id || "").replace(/\D/g, "");
   if (DEMO_PAYMENTS) {
-    if (!isPaymentApproved(stored) && stored) {
+    if (!stored || !hasPublicOrderAccess(stored, req)) {
+      return res.status(404).json({ error: "not_found" });
+    }
+    if (!isPaymentApproved(stored)) {
       return res.status(404).json({ error: unpaidPaymentError(stored.status) });
     }
-    if (!stored) return res.status(404).json({ error: "not_found" });
     const latest = await maybeNotifyArrival({ ...stored, status: stored.status || "approved", demo: true });
     return res.json(publicOrderView(latest));
   }
   try {
-    const paymentId = String(req.query.payment_id || "").replace(/\D/g, "");
     const payment = new Payment(mpClient());
     let latest = stored;
+    let paymentMatched = false;
     if (paymentId) {
       const result = await payment.get({ id: paymentId });
       if (result.external_reference && result.external_reference !== orderId) {
         return res.status(404).json({ error: "not_found" });
       }
+      paymentMatched = String(result.external_reference || "") === orderId;
       latest = (await rememberOrder(orderId, { status: result.status || "unknown", paymentId })) || latest;
-    } else if (!isPaymentApproved(stored)) {
+    } else if (!isPaymentApproved(stored) && orderAccessGranted(stored, requestOrderAccess(req))) {
       const found = await payment.search({
         options: {
           external_reference: orderId,
@@ -478,12 +519,18 @@ app.get("/api/order/:orderId", rateLimit, async (req, res) => {
         })) || latest;
       }
     }
+    if (!hasPublicOrderAccess(latest, req, { paymentMatched })) {
+      return res.status(404).json({ error: "not_found" });
+    }
     if (!isPaymentApproved(latest)) {
       return res.status(404).json({ error: unpaidPaymentError(latest?.status) });
     }
     latest = await maybeNotifyArrival(latest);
     return res.json(publicOrderView(latest));
   } catch {
+    if (!hasPublicOrderAccess(stored, req, { paymentMatched: false })) {
+      return res.status(404).json({ error: "not_found" });
+    }
     if (isPaymentApproved(stored)) {
       const latest = await maybeNotifyArrival(stored);
       return res.json(publicOrderView(latest));

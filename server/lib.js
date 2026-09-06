@@ -1,4 +1,4 @@
-import { createHmac, timingSafeEqual } from "node:crypto";
+import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import { publicDigitalDownloads } from "./digital.js";
 
 export const MAX_QTY = 20;
@@ -216,6 +216,42 @@ export function installmentOptions(total, maxInstallments = 3) {
     options.push({ n, value, total });
   }
   return options;
+}
+
+export function timingSafeEqualText(left, right) {
+  const a = Buffer.from(String(left || ""), "utf8");
+  const b = Buffer.from(String(right || ""), "utf8");
+  if (!a.length || a.length !== b.length) {
+    if (a.length) timingSafeEqual(a, a);
+    return false;
+  }
+  return timingSafeEqual(a, b);
+}
+
+export function createAccessToken() {
+  return randomBytes(24).toString("hex");
+}
+
+export function orderAccessGranted(order, { token = "", email = "" } = {}) {
+  const expectedToken = String(order?.accessToken || "").trim();
+  const givenToken = String(token || "").trim();
+  if (expectedToken && givenToken && timingSafeEqualText(expectedToken, givenToken)) {
+    return true;
+  }
+  const expectedEmail = String(order?.customer?.email || "").trim().toLowerCase();
+  const givenEmail = String(email || "").trim().toLowerCase();
+  if (expectedEmail && givenEmail && timingSafeEqualText(expectedEmail, givenEmail)) {
+    return true;
+  }
+  return false;
+}
+
+export function withAccessQuery(url, token) {
+  const base = String(url || "").trim();
+  const t = String(token || "").trim();
+  if (!base || !t) return base;
+  const join = base.includes("?") ? "&" : "?";
+  return `${base}${join}t=${encodeURIComponent(t)}`;
 }
 
 export function isOriginAllowed(origin, { allowedOrigins = [], mode = "demo", serverOrigin = "" } = {}) {
@@ -526,6 +562,7 @@ export function fulfillmentSnapshot({ orderId, quote, payer, status = "pending",
   const delivery = quote?.shippingMethod === "delivery" && quote?.hasPhysical;
   return {
     orderId,
+    accessToken: createAccessToken(),
     status,
     createdAt: now(),
     shippingMethod: quote?.shippingMethod || "none",
@@ -658,6 +695,7 @@ export function publicOrderView(order) {
   const trackingCode = normalizeTrackingCode(order.trackingCode);
   return {
     orderId: order.orderId,
+    accessToken: String(order.accessToken || ""),
     status: order.status || "pending",
     demo: !!order.demo,
     shippingMethod: order.shippingMethod || "none",

@@ -30,6 +30,10 @@ import {
   fulfillmentSnapshot,
   publicOrderView,
   adminOrderView,
+  createAccessToken,
+  orderAccessGranted,
+  withAccessQuery,
+  timingSafeEqualText,
   formatAddress,
   normalizeTrackingCode,
   isPaymentApproved,
@@ -247,7 +251,32 @@ test("não publica .env, docs, yaml nem a pasta server", () => {
   assert.equal(isBlockedStaticPath("/index.html"), false);
   assert.equal(isBlockedStaticPath("/style.css"), false);
   assert.equal(isBlockedStaticPath("/envios.html"), false);
+  assert.equal(isBlockedStaticPath("/robots.txt"), false);
   assert.equal(isBlockedStaticPath("/assets/img/logo.png"), false);
+});
+
+test("pedido público só abre com token ou e-mail da compra", () => {
+  const a = createAccessToken();
+  const b = createAccessToken();
+  assert.equal(a.length, 48);
+  assert.notEqual(a, b);
+  assert.equal(timingSafeEqualText(a, a), true);
+  assert.equal(timingSafeEqualText(a, b), false);
+  assert.equal(timingSafeEqualText("abc", "ab"), false);
+  const order = {
+    accessToken: a,
+    customer: { email: "maria@email.com" },
+  };
+  assert.equal(orderAccessGranted(order, { token: a }), true);
+  assert.equal(orderAccessGranted(order, { token: b }), false);
+  assert.equal(orderAccessGranted(order, { email: "maria@email.com" }), true);
+  assert.equal(orderAccessGranted(order, { email: "outra@email.com" }), false);
+  assert.equal(orderAccessGranted(order, {}), false);
+  assert.equal(
+    withAccessQuery("https://www.familiaceme.com.br/pedidos.html?pedido=CEME-1", a),
+    `https://www.familiaceme.com.br/pedidos.html?pedido=CEME-1&t=${a}`
+  );
+  assert.equal(withAccessQuery("https://loja.example/index.html", a).includes("t="), true);
 });
 
 test("rejeita payload com dados de cartão", () => {
@@ -499,6 +528,8 @@ test("guarda nome, endereço e itens do pedido sem cadastro de membro", () => {
   assert.equal(pub.email, undefined);
   assert.equal(pub.shipped, false);
   assert.equal(pub.customerName, "Maria Silva");
+  assert.equal(String(snap.accessToken || "").length, 48);
+  assert.equal(pub.accessToken, snap.accessToken);
   const admin = adminOrderView(snap);
   assert.equal(admin.cpf, undefined);
   assert.equal(admin.email, "maria@email.com");

@@ -83,9 +83,40 @@
     return `<ol class="track-steps">${items}</ol>`;
   }
 
+  function accessTokenFor(orderId, fromOrder) {
+    const id = String(orderId || "").trim();
+    const fromResult = String(fromOrder?.accessToken || "").trim();
+    if (fromResult) {
+      try {
+        sessionStorage.setItem(`ceme-access:${id}`, fromResult);
+      } catch {
+        /* ignore */
+      }
+      return fromResult;
+    }
+    try {
+      const fromUrl = new URLSearchParams(location.search).get("t") || "";
+      if (fromUrl) {
+        sessionStorage.setItem(`ceme-access:${id}`, fromUrl);
+        return fromUrl;
+      }
+      return (id && sessionStorage.getItem(`ceme-access:${id}`)) || "";
+    } catch {
+      return "";
+    }
+  }
+
+  function withAccessQuery(url, token) {
+    const base = String(url || "").trim();
+    const t = String(token || "").trim();
+    if (!base || !t) return base;
+    return `${base}${base.includes("?") ? "&" : "?"}t=${encodeURIComponent(t)}`;
+  }
+
   function render(order) {
     const box = document.getElementById("track-result");
     const base = apiBase();
+    const token = accessTokenFor(order.orderId, order);
     const items = (order.items || [])
       .map((item) => `<li>${escapeHtml(item.name)} × ${Number(item.qty)}</li>`)
       .join("");
@@ -96,13 +127,13 @@
         ? "<p class=\"track-note\">O número CEME é o rastreio da loja, não o código dos Correios. Sem código dos Correios, o prazo é de 3 dias a partir do envio. Avisamos no e-mail e no WhatsApp: saiu hoje e chega amanhã.</p>"
         : "";
     const cupom = base
-      ? `<p><a class="btn btn-gold" href="${escapeHtml(base)}/api/order/${encodeURIComponent(order.orderId)}/cupom.pdf" download>Baixar cupom PDF</a></p>`
+      ? `<p><a class="btn btn-gold" href="${escapeHtml(withAccessQuery(`${base}/api/order/${encodeURIComponent(order.orderId)}/cupom.pdf`, token))}" download>Baixar cupom PDF</a></p>`
       : "";
     const downloads = (order.downloads || [])
       .map(
         (file) =>
           base
-            ? `<p><a class="btn btn-gold" href="${escapeHtml(base)}/api/order/${encodeURIComponent(order.orderId)}/download/${encodeURIComponent(file.id)}" download>Baixar álbum — ${escapeHtml(file.name || "completo")}</a></p>`
+            ? `<p><a class="btn btn-gold" href="${escapeHtml(withAccessQuery(`${base}/api/order/${encodeURIComponent(order.orderId)}/download/${encodeURIComponent(file.id)}`, token))}" download>Baixar álbum — ${escapeHtml(file.name || "completo")}</a></p>`
             : ""
       )
       .join("");
@@ -138,20 +169,30 @@
       error.hidden = false;
       return;
     }
+    const token = accessTokenFor(id);
+    const email = String(document.getElementById("track-email")?.value || "").trim();
+    if (!token && !email) {
+      error.textContent = "Informe o e-mail da compra ou abra o link do comprovante (ele já traz o acesso).";
+      error.hidden = false;
+      return;
+    }
+    const qs = new URLSearchParams();
+    if (token) qs.set("t", token);
+    if (email) qs.set("email", email);
     try {
-      const res = await fetch(`${base}/api/order/${encodeURIComponent(id)}`);
+      const res = await fetch(`${base}/api/order/${encodeURIComponent(id)}?${qs}`);
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
         error.textContent =
           data.error === "payment_pending" || data.error === "payment_not_confirmed" || data.error === "payment_rejected"
             ? "O Mercado Pago não confirmou este pagamento. O pedido só aparece depois da aprovação."
-            : "Não encontramos esse pedido. Confira o número do comprovante.";
+            : "Não encontramos esse pedido. Confira o número e o e-mail da compra, ou use o link do e-mail/WhatsApp.";
         error.hidden = false;
         return;
       }
       render(data);
     } catch {
-      error.textContent = "Não encontramos esse pedido. Confira o número do comprovante.";
+      error.textContent = "Não encontramos esse pedido. Confira o número e o e-mail da compra.";
       error.hidden = false;
     }
   }
@@ -161,7 +202,12 @@
     lookup(document.getElementById("track-order").value);
   });
 
-  const fromUrl = new URLSearchParams(location.search).get("pedido");
+  const params = new URLSearchParams(location.search);
+  const fromUrl = params.get("pedido");
+  const fromEmail = params.get("email");
+  if (fromEmail && document.getElementById("track-email")) {
+    document.getElementById("track-email").value = fromEmail;
+  }
   if (fromUrl) {
     document.getElementById("track-order").value = fromUrl;
     lookup(fromUrl);

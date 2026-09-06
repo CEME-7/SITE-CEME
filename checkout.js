@@ -439,6 +439,38 @@
     };
   }
 
+  function rememberAccessToken(orderId, token) {
+    const id = String(orderId || "").trim();
+    const t = String(token || "").trim();
+    if (!id || !t || !window.sessionStorage) return t;
+    try {
+      sessionStorage.setItem(`ceme-access:${id}`, t);
+    } catch {
+      /* ignore quota / private mode */
+    }
+    return t;
+  }
+
+  function orderAccessToken(orderId, result) {
+    const id = String(orderId || result?.orderId || "").trim();
+    const fromResult = String(result?.accessToken || "").trim();
+    if (fromResult) return rememberAccessToken(id, fromResult);
+    try {
+      const fromUrl = new URLSearchParams(location.search).get("t") || "";
+      if (fromUrl) return rememberAccessToken(id, fromUrl);
+      return (id && sessionStorage.getItem(`ceme-access:${id}`)) || "";
+    } catch {
+      return "";
+    }
+  }
+
+  function withAccessQuery(url, token) {
+    const base = String(url || "").trim();
+    const t = String(token || "").trim();
+    if (!base || !t) return base;
+    return `${base}${base.includes("?") ? "&" : "?"}t=${encodeURIComponent(t)}`;
+  }
+
   function finishOrder(result) {
     if (result.status === "pending" || result.status === "in_process") {
       setStep("pay");
@@ -446,19 +478,20 @@
       return;
     }
     state.orderId = result.orderId;
+    const token = orderAccessToken(result.orderId, result);
     $("#checkout-order-id").textContent = result.orderId;
     const paid = true;
     const hadAlbum = quote().items.some((item) => item.id === "musicas-neuroconectivas" || item.kind === "musica");
     const track = $("#checkout-track-link");
     if (track) {
-      track.href = `pedidos.html?pedido=${encodeURIComponent(result.orderId)}`;
+      track.href = withAccessQuery(`pedidos.html?pedido=${encodeURIComponent(result.orderId)}`, token);
       track.hidden = !paid;
     }
     const cupom = $("#checkout-cupom-link");
     if (cupom) {
       const base = apiBase();
       if (paid && base && result.orderId && /^CEME-[A-Z0-9-]+$/i.test(result.orderId)) {
-        cupom.href = `${base}/api/order/${encodeURIComponent(result.orderId)}/cupom.pdf`;
+        cupom.href = withAccessQuery(`${base}/api/order/${encodeURIComponent(result.orderId)}/cupom.pdf`, token);
         cupom.hidden = false;
       } else {
         cupom.removeAttribute("href");
@@ -469,7 +502,10 @@
     if (album) {
       const base = apiBase();
       if (paid && hadAlbum && base && result.orderId && /^CEME-[A-Z0-9-]+$/i.test(result.orderId)) {
-        album.href = `${base}/api/order/${encodeURIComponent(result.orderId)}/download/musicas-neuroconectivas`;
+        album.href = withAccessQuery(
+          `${base}/api/order/${encodeURIComponent(result.orderId)}/download/musicas-neuroconectivas`,
+          token
+        );
         album.hidden = false;
       } else {
         album.removeAttribute("href");
@@ -528,6 +564,9 @@
       if (!res.ok || !result.checkoutUrl) {
         throw Object.assign(new Error(result.error || "checkout_failed"), { code: result.error });
       }
+      if (result.orderId && result.accessToken) {
+        rememberAccessToken(result.orderId, result.accessToken);
+      }
       window.location.assign(result.checkoutUrl);
     } catch {
       setPayMessage(t("checkoutPayError"), "error");
@@ -541,7 +580,7 @@
 
   function clearReturnQuery() {
     const url = new URL(location.href);
-    ["mp", "collection_id", "collection_status", "payment_id", "status", "external_reference", "preference_id", "merchant_order_id", "payment_type"].forEach(
+    ["mp", "collection_id", "collection_status", "payment_id", "status", "external_reference", "preference_id", "merchant_order_id", "payment_type", "t"].forEach(
       (key) => url.searchParams.delete(key)
     );
     history.replaceState({}, "", url.pathname + url.search + url.hash);
@@ -575,11 +614,20 @@
         clearReturnQuery();
         return true;
       }
-      const qs = paymentId ? `?payment_id=${encodeURIComponent(paymentId)}` : "";
-      const res = await fetch(`${apiBase()}/api/order/${encodeURIComponent(orderId)}${qs}`);
+      const token = orderAccessToken(orderId);
+      const qs = new URLSearchParams();
+      if (paymentId) qs.set("payment_id", paymentId);
+      if (token) qs.set("t", token);
+      const suffix = qs.toString() ? `?${qs}` : "";
+      const res = await fetch(`${apiBase()}/api/order/${encodeURIComponent(orderId)}${suffix}`);
       const data = await res.json().catch(() => ({}));
       if (data.status === "approved") {
-        finishOrder({ orderId: data.orderId || orderId, demo: !!data.demo, status: "approved" });
+        finishOrder({
+          orderId: data.orderId || orderId,
+          accessToken: data.accessToken || token,
+          demo: !!data.demo,
+          status: "approved",
+        });
       } else {
         setStep("pay");
         setPayMessage(t("checkoutNotConfirmed"), "error");
