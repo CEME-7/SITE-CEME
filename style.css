@@ -2397,6 +2397,13 @@ section {
   color: var(--burgundy, #5c1f2e);
   font-weight: 600;
 }
+#checkout-proof-wa,
 #checkout-wa-sent {
-  margin-top: 0.5rem;
+  display: flex;
+  width: min(100%, 340px);
+  margin: 0 auto 10px;
+  justify-content: center;
+}
+#checkout-wa-sent {
+  margin-top: 0;
 }
