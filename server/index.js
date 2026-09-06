@@ -113,9 +113,12 @@ function rateLimit(req, res, next) {
   const now = Date.now();
   const windowMs = 60_000;
   const admin = req.path.startsWith("/api/orders");
+  const orderStatus =
+    req.method === "GET" && /^\/api\/order\/[^/]+\/?$/.test(req.path);
   const buy = req.path.startsWith("/api/checkout") || req.path.startsWith("/api/order");
-  const max = admin ? 8 : buy ? 12 : 30;
-  const bucket = `${ip}:${admin ? "admin" : buy ? "buy" : "api"}`;
+  // Polling do Pix no retorno precisa de margem; GET de status não pode ser 12/min.
+  const max = admin ? 8 : orderStatus ? 90 : buy ? 20 : 30;
+  const bucket = `${ip}:${admin ? "admin" : orderStatus ? "order-status" : buy ? "buy" : "api"}`;
   const current = hits.get(bucket) || [];
   const recent = current.filter((time) => now - time < windowMs);
   recent.push(now);
@@ -181,8 +184,13 @@ async function rememberOrder(orderId, patch) {
     publicKey,
     updatedAt: Date.now(),
   });
-  if (isPaymentApproved(saved) && !isPaymentApproved(prev) && !prev.notifyPaid) {
-    const shop = String(process.env.PUBLIC_SITE_URL || "").replace(/\/$/, "");
+  if (isPaymentApproved(saved) && !isPaymentApproved(prev) && !(prev.notifyPaid?.email || prev.notifyPaid?.whatsapp || prev.notifyPaid?.delivered)) {
+    const shop = String(
+      process.env.PUBLIC_SITE_URL ||
+        process.env.PUBLIC_API_URL ||
+        process.env.RENDER_EXTERNAL_URL ||
+        ""
+    ).replace(/\/$/, "");
     const trackingUrl = trackingPageUrl(shop, id, saved.publicKey);
     try {
       const downloads = digitalDownloadsForOrder(saved);
@@ -205,6 +213,7 @@ async function rememberOrder(orderId, patch) {
           email: !!notify.email?.sent,
           whatsapp: !!notify.whatsapp?.sent,
           store: !!notify.store?.sent,
+          delivered: !!(notify.email?.sent || notify.whatsapp?.sent),
           attemptedAt: Date.now(),
         },
       });

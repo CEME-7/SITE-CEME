@@ -89,6 +89,7 @@
     if (fromResult) {
       try {
         sessionStorage.setItem(`ceme-order-key:${id}`, fromResult);
+        try { localStorage.setItem(`ceme-order-key:${id}`, fromResult); } catch { /* ignore */ }
       } catch {
         /* ignore */
       }
@@ -102,7 +103,7 @@
         return fromUrl;
       }
       return (
-        (id && (sessionStorage.getItem(`ceme-order-key:${id}`) || sessionStorage.getItem(`ceme-access:${id}`))) ||
+        (id && (sessionStorage.getItem(`ceme-order-key:${id}`) || localStorage.getItem(`ceme-order-key:${id}`) || sessionStorage.getItem(`ceme-access:${id}`))) ||
         ""
       );
     } catch {
@@ -156,7 +157,7 @@
     box.hidden = false;
   }
 
-  async function lookup(orderId) {
+  async function lookup(orderId, { polls = 0 } = {}) {
     const error = document.getElementById("track-error");
     const result = document.getElementById("track-result");
     error.hidden = true;
@@ -169,31 +170,50 @@
     }
     const base = apiBase();
     if (!base) {
-      error.textContent = "Abra a loja em http://127.0.0.1:3001 para consultar o pedido.";
+      error.textContent = "Abra a loja pelo endereço publicado da CEME para consultar o pedido.";
       error.hidden = false;
       return;
     }
     const key = publicKeyFor(id) || String(document.getElementById("track-key")?.value || "").trim();
-    if (!key) {
+    const paymentId = String(new URLSearchParams(location.search).get("payment_id") || "").replace(/\D/g, "");
+    if (!key && !paymentId) {
       error.textContent = "Informe a chave do pedido ou abra o link do comprovante (ele já traz o acesso).";
       error.hidden = false;
       return;
     }
     const qs = new URLSearchParams();
-    qs.set("k", key);
+    if (key) qs.set("k", key);
+    if (paymentId) qs.set("payment_id", paymentId);
     try {
       const res = await fetch(`${base}/api/order/${encodeURIComponent(id)}?${qs}`);
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
         error.textContent =
           data.error === "payment_pending" || data.error === "payment_not_confirmed" || data.error === "payment_rejected"
-            ? "O Mercado Pago não confirmou este pagamento. O pedido só aparece depois da aprovação."
+            ? "O Mercado Pago ainda não confirmou este pagamento. Guarde o número e a chave — em alguns segundos clique em consultar de novo."
             : "Não encontramos esse pedido. Confira o número e a chave, ou use o link do e-mail/WhatsApp.";
         error.hidden = false;
         return;
       }
-      if (data.publicKey && document.getElementById("track-key")) {
-        document.getElementById("track-key").value = data.publicKey;
+      if (data.publicKey) {
+        try {
+          sessionStorage.setItem(`ceme-order-key:${id}`, data.publicKey);
+          localStorage.setItem(`ceme-order-key:${id}`, data.publicKey);
+        } catch { /* ignore */ }
+        if (document.getElementById("track-key")) {
+          document.getElementById("track-key").value = data.publicKey;
+        }
+      }
+      if (data.status && data.status !== "approved") {
+        error.textContent =
+          `Pedido ${id} encontrado. Pagamento ainda pendente no Mercado Pago` +
+          (data.publicKey ? ` — chave ${data.publicKey}.` : ".") +
+          " Atualizando automaticamente…";
+        error.hidden = false;
+        if (polls < 30) {
+          setTimeout(() => lookup(id, { polls: polls + 1 }), 2000);
+        }
+        return;
       }
       render(data);
     } catch {

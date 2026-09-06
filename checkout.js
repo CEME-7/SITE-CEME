@@ -452,6 +452,7 @@
     if (!id || !key || !window.sessionStorage) return key;
     try {
       sessionStorage.setItem(`ceme-order-key:${id}`, key);
+      try { localStorage.setItem(`ceme-order-key:${id}`, key); } catch { /* ignore */ }
     } catch {
       /* ignore quota / private mode */
     }
@@ -467,7 +468,7 @@
       const fromUrl = params.get("k") || params.get("t") || "";
       if (fromUrl) return rememberPublicKey(id, fromUrl);
       return (
-        (id && (sessionStorage.getItem(`ceme-order-key:${id}`) || sessionStorage.getItem(`ceme-access:${id}`))) ||
+        (id && (sessionStorage.getItem(`ceme-order-key:${id}`) || localStorage.getItem(`ceme-order-key:${id}`) || sessionStorage.getItem(`ceme-access:${id}`) || localStorage.getItem(`ceme-access:${id}`))) ||
         ""
       );
     } catch {
@@ -538,6 +539,12 @@
     state.orderId = result.orderId;
     const token = orderPublicKey(result.orderId, result);
     $("#checkout-order-id").textContent = result.orderId;
+    const keyEl = $("#checkout-public-key");
+    if (keyEl) {
+      const key = token || result.publicKey || "";
+      keyEl.textContent = key ? `Chave de rastreio: ${key}` : "";
+      keyEl.hidden = !key;
+    }
     const paid = true;
     const hadAlbum = quote().items.some((item) => item.id === "musicas-neuroconectivas" || item.kind === "musica");
     const track = $("#checkout-track-link");
@@ -666,6 +673,7 @@
   function saveReturnContext(ctx) {
     try {
       sessionStorage.setItem("ceme-mp-return", JSON.stringify(ctx));
+      localStorage.setItem("ceme-mp-return", JSON.stringify(ctx));
     } catch {
       /* ignore */
     }
@@ -673,7 +681,7 @@
 
   function loadReturnContext() {
     try {
-      const raw = sessionStorage.getItem("ceme-mp-return");
+      const raw = sessionStorage.getItem("ceme-mp-return") || localStorage.getItem("ceme-mp-return");
       if (raw) return JSON.parse(raw);
     } catch {
       /* ignore */
@@ -696,6 +704,7 @@
   function clearReturnContext() {
     try {
       sessionStorage.removeItem("ceme-mp-return");
+      localStorage.removeItem("ceme-mp-return");
     } catch {
       /* ignore */
     }
@@ -712,8 +721,8 @@
   }
 
   async function confirmPaidOrder({ orderId, paymentId, token, paymentTypeHint = "" }) {
-    // Pix pode demorar alguns segundos para o MP refletir "approved" na API.
-    const attempts = 10;
+    // Pix real: webhook/API podem atrasar. Poll longo + retry em 429/5xx.
+    const attempts = 40;
     let last = { ok: false, data: {} };
     for (let i = 0; i < attempts; i++) {
       setPayMessage(t("checkoutChecking"), "");
@@ -721,9 +730,11 @@
       if (last.data?.status === "approved") {
         const paymentType = last.data.paymentType || paymentTypeHint || "";
         const paymentMethod = last.data.paymentMethod || "";
+        const key = last.data.publicKey || token;
+        if (key) rememberPublicKey(orderId, key);
         finishOrder({
           orderId: last.data.orderId || orderId,
-          publicKey: last.data.publicKey || token,
+          publicKey: key,
           customerName: last.data.customerName || "",
           total: last.data.total,
           paymentType,
@@ -735,20 +746,54 @@
         clearReturnContext();
         return true;
       }
+      // Mesmo pending: já mostra CEME + chave para o cliente não ficar sem rastreio.
+      const keyNow = last.data?.publicKey || token || orderPublicKey(orderId);
+      if (keyNow) {
+        rememberPublicKey(orderId, keyNow);
+        showTrackingCredentials(orderId, keyNow, { pending: true });
+      }
+      const statusCode = Number(last.status || 0);
       const pending =
         ["pending", "in_process", "inprocess", "authorized"].includes(
           String(last.data?.status || "").toLowerCase()
         ) ||
         last.data?.error === "payment_not_confirmed" ||
-        last.status === 404;
-      if (!pending && last.ok === false && last.status >= 500) {
-        await sleep(1200);
-        continue;
-      }
+        statusCode === 404 ||
+        statusCode === 429 ||
+        statusCode >= 500;
       if (!pending && i >= 2) break;
-      await sleep(1500);
+      await sleep(Math.min(4000, 1200 + i * 150));
     }
     return false;
+  }
+
+    function showTrackingCredentials(orderId, publicKey, { pending = false } = {}) {
+    const id = String(orderId || "").trim();
+    const key = String(publicKey || "").trim();
+    if (!id || !key) return;
+    rememberPublicKey(id, key);
+    const msg = t(pending ? "checkoutPendingKeepKey" : "checkoutTrackCredentials")
+      .replace("{order}", id)
+      .replace("{key}", key);
+    const hint = $("#checkout-track-hint");
+    if (hint) {
+      hint.textContent = msg;
+      hint.hidden = false;
+    }
+    const payMsg = $("#checkout-pay-message") || $("#checkout-pay-msg");
+    if (pending && payMsg && !String(payMsg.textContent || "").includes(id)) {
+      // keep primary waiting message; credentials stay in hint
+    }
+    const track = $("#checkout-track-link");
+    if (track) {
+      track.href = withAccessQuery(`pedidos.html?pedido=${encodeURIComponent(id)}`, key);
+      track.hidden = false;
+    }
+    const keyBox = $("#checkout-public-key");
+    if (keyBox) {
+      keyBox.textContent = `Chave de rastreio: ${key}`;
+      keyBox.hidden = false;
+    }
   }
 
   async function handleReturn() {
@@ -784,7 +829,7 @@
       }
 
       const mpStatus = String(params.get("status") || params.get("collection_status") || "").toLowerCase();
-      const rejected = ["rejected", "cancelled", "canceled", "refunded", "charged_back", "null"].includes(mpStatus);
+      const rejected = ["rejected", "cancelled", "canceled", "refunded", "charged_back"].includes(mpStatus);
       if (rejected) {
         setStep("pay");
         setPayMessage(t("checkoutNotConfirmed"), "error");
@@ -802,7 +847,14 @@
         setStep("pay");
         const verifyBtn = document.getElementById("checkout-verify-pay");
         if (verifyBtn) verifyBtn.hidden = false;
-        setPayMessage(t("checkoutWaitingPix"), "error");
+        const key = orderPublicKey(orderId) || token;
+        if (key) showTrackingCredentials(orderId, key, { pending: true });
+        setPayMessage(
+          t("checkoutWaitingPix") +
+            " " +
+            t("checkoutPendingKeepKey").replace("{order}", orderId).replace("{key}", key || "—"),
+          "error"
+        );
       }
     } catch {
       setStep("pay");
