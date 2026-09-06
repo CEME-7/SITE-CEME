@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=67">
+  <link rel="stylesheet" href="style.css?v=68">
 </head>
 <body>
   <header class="site-header is-scrolled">
@@ -34,13 +34,13 @@
   <main class="wrap fulfill-page">
     <p class="kicker">Checkout Pro · Mercado Pago</p>
     <h1>Acompanhar pedido</h1>
-    <p class="lead">Digite o número do pedido (CEME-1, CEME-2…) e o e-mail da compra. Ele só aparece depois que o Mercado Pago confirmar o pagamento. O link do e-mail ou do WhatsApp já abre o rastreio. Pedido digital (álbum) libera o download aqui. Depois do envio físico, o prazo é de 3 dias e avisamos: saiu hoje e chega amanhã.</p>
+    <p class="lead">Digite o número do pedido (CEME-1, CEME-2…) e a chave que veio no e-mail, no WhatsApp ou na tela depois do pagamento. Só o número não abre o pedido de outra pessoa. Pedido digital (álbum) libera o download aqui. Depois do envio físico, o prazo é de 3 dias e avisamos: saiu hoje e chega amanhã.</p>
     <form class="track-form" id="track-form">
       <label for="track-order">Número do pedido</label>
       <input id="track-order" type="text" required maxlength="80" placeholder="CEME-1" autocomplete="off">
-      <label for="track-email">E-mail da compra</label>
+      <label for="track-key">Chave do pedido</label>
       <div class="track-row">
-        <input id="track-email" type="email" maxlength="120" placeholder="voce@email.com" autocomplete="email">
+        <input id="track-key" type="text" maxlength="80" placeholder="cole a chave do comprovante" autocomplete="off" spellcheck="false">
         <button class="btn btn-gold" type="submit">Consultar</button>
       </div>
     </form>
@@ -48,7 +48,7 @@
     <article class="order-card" id="track-result" hidden></article>
   </main>
 
-  <script src="checkout-config.js?v=67"></script>
-  <script src="pedidos.js?v=67"></script>
+  <script src="checkout-config.js?v=68"></script>
+  <script src="pedidos.js?v=68"></script>
 </body>
 </html>

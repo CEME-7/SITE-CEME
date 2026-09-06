@@ -439,36 +439,40 @@
     };
   }
 
-  function rememberAccessToken(orderId, token) {
+  function rememberPublicKey(orderId, publicKey) {
     const id = String(orderId || "").trim();
-    const t = String(token || "").trim();
-    if (!id || !t || !window.sessionStorage) return t;
+    const key = String(publicKey || "").trim();
+    if (!id || !key || !window.sessionStorage) return key;
     try {
-      sessionStorage.setItem(`ceme-access:${id}`, t);
+      sessionStorage.setItem(`ceme-order-key:${id}`, key);
     } catch {
       /* ignore quota / private mode */
     }
-    return t;
+    return key;
   }
 
-  function orderAccessToken(orderId, result) {
+  function orderPublicKey(orderId, result) {
     const id = String(orderId || result?.orderId || "").trim();
-    const fromResult = String(result?.accessToken || "").trim();
-    if (fromResult) return rememberAccessToken(id, fromResult);
+    const fromResult = String(result?.publicKey || result?.accessToken || "").trim();
+    if (fromResult) return rememberPublicKey(id, fromResult);
     try {
-      const fromUrl = new URLSearchParams(location.search).get("t") || "";
-      if (fromUrl) return rememberAccessToken(id, fromUrl);
-      return (id && sessionStorage.getItem(`ceme-access:${id}`)) || "";
+      const params = new URLSearchParams(location.search);
+      const fromUrl = params.get("k") || params.get("t") || "";
+      if (fromUrl) return rememberPublicKey(id, fromUrl);
+      return (
+        (id && (sessionStorage.getItem(`ceme-order-key:${id}`) || sessionStorage.getItem(`ceme-access:${id}`))) ||
+        ""
+      );
     } catch {
       return "";
     }
   }
 
-  function withAccessQuery(url, token) {
+  function withAccessQuery(url, publicKey) {
     const base = String(url || "").trim();
-    const t = String(token || "").trim();
-    if (!base || !t) return base;
-    return `${base}${base.includes("?") ? "&" : "?"}t=${encodeURIComponent(t)}`;
+    const key = String(publicKey || "").trim();
+    if (!base || !key) return base;
+    return `${base}${base.includes("?") ? "&" : "?"}k=${encodeURIComponent(key)}`;
   }
 
   function finishOrder(result) {
@@ -478,7 +482,7 @@
       return;
     }
     state.orderId = result.orderId;
-    const token = orderAccessToken(result.orderId, result);
+    const token = orderPublicKey(result.orderId, result);
     $("#checkout-order-id").textContent = result.orderId;
     const paid = true;
     const hadAlbum = quote().items.some((item) => item.id === "musicas-neuroconectivas" || item.kind === "musica");
@@ -564,8 +568,8 @@
       if (!res.ok || !result.checkoutUrl) {
         throw Object.assign(new Error(result.error || "checkout_failed"), { code: result.error });
       }
-      if (result.orderId && result.accessToken) {
-        rememberAccessToken(result.orderId, result.accessToken);
+      if (result.orderId && (result.publicKey || result.accessToken)) {
+        rememberPublicKey(result.orderId, result.publicKey || result.accessToken);
       }
       window.location.assign(result.checkoutUrl);
     } catch {
@@ -580,7 +584,7 @@
 
   function clearReturnQuery() {
     const url = new URL(location.href);
-    ["mp", "collection_id", "collection_status", "payment_id", "status", "external_reference", "preference_id", "merchant_order_id", "payment_type", "t"].forEach(
+    ["mp", "collection_id", "collection_status", "payment_id", "status", "external_reference", "preference_id", "merchant_order_id", "payment_type", "t", "k"].forEach(
       (key) => url.searchParams.delete(key)
     );
     history.replaceState({}, "", url.pathname + url.search + url.hash);
@@ -614,17 +618,17 @@
         clearReturnQuery();
         return true;
       }
-      const token = orderAccessToken(orderId);
+      const token = orderPublicKey(orderId);
       const qs = new URLSearchParams();
       if (paymentId) qs.set("payment_id", paymentId);
-      if (token) qs.set("t", token);
+      if (token) qs.set("k", token);
       const suffix = qs.toString() ? `?${qs}` : "";
       const res = await fetch(`${apiBase()}/api/order/${encodeURIComponent(orderId)}${suffix}`);
       const data = await res.json().catch(() => ({}));
       if (data.status === "approved") {
         finishOrder({
           orderId: data.orderId || orderId,
-          accessToken: data.accessToken || token,
+          publicKey: data.publicKey || token,
           demo: !!data.demo,
           status: "approved",
         });

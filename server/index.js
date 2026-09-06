@@ -24,9 +24,11 @@ import {
   fulfillmentSnapshot,
   publicOrderView,
   adminOrderView,
-  createAccessToken,
-  orderAccessGranted,
+  createPublicKey,
+  orderPublicKey,
+  canAccessPublicOrder,
   withAccessQuery,
+  trackingPageUrl,
   timingSafeEqualText,
   correiosTrackingUrl,
   isPaymentApproved,
@@ -122,16 +124,15 @@ function rateLimit(req, res, next) {
   return next();
 }
 
-function requestOrderAccess(req) {
-  return {
-    token: String(req.query.t || req.get("x-order-token") || "").trim(),
-    email: String(req.query.email || "").trim(),
-  };
+function requestPublicKey(req) {
+  return String(req.query.k || req.query.t || req.get("x-order-key") || "").trim();
 }
 
 function hasPublicOrderAccess(order, req, { paymentMatched = false } = {}) {
-  if (paymentMatched) return true;
-  return orderAccessGranted(order, requestOrderAccess(req));
+  return canAccessPublicOrder(order, {
+    publicKey: requestPublicKey(req),
+    paymentMatched,
+  });
 }
 
 function quoteFromBody(body) {
@@ -170,21 +171,17 @@ async function rememberOrder(orderId, patch) {
   const id = String(orderId || "").slice(0, 80);
   if (!/^CEME-[A-Z0-9-]+$/i.test(id)) return null;
   const prev = (await findOrder(id)) || { orderId: id };
-  const accessToken =
-    String(patch?.accessToken || prev.accessToken || "").trim() || createAccessToken();
+  const publicKey = orderPublicKey({ ...prev, ...patch }) || createPublicKey();
   const saved = await upsertOrder({
     ...prev,
     ...patch,
     orderId: id,
-    accessToken,
+    publicKey,
     updatedAt: Date.now(),
   });
   if (isPaymentApproved(saved) && !isPaymentApproved(prev) && !prev.notifyPaid) {
     const shop = String(process.env.PUBLIC_SITE_URL || "").replace(/\/$/, "");
-    const trackingUrl = withAccessQuery(
-      shop ? `${shop}/pedidos.html?pedido=${encodeURIComponent(id)}` : "",
-      saved.accessToken
-    );
+    const trackingUrl = trackingPageUrl(shop, id, saved.publicKey);
     try {
       const downloads = digitalDownloadsForOrder(saved);
       const apiOrigin = publicApiOrigin({
@@ -196,7 +193,7 @@ async function rememberOrder(orderId, patch) {
         downloads.length && apiOrigin
           ? withAccessQuery(
               `${apiOrigin}/api/order/${encodeURIComponent(id)}/download/${encodeURIComponent(downloads[0].id)}`,
-              saved.accessToken
+              saved.publicKey
             )
           : "";
       const notify = await notifyPaid(saved, { trackingUrl, downloadUrl });
@@ -318,8 +315,8 @@ app.post("/api/checkout", rateLimit, async (req, res) => {
     const shop = siteUrl(req);
     const snapshot = fulfillmentSnapshot({ orderId, quote, payer, status: DEMO_PAYMENTS ? "approved" : "pending" });
     const saved = await rememberOrder(orderId, snapshot);
-    const accessToken = saved?.accessToken || snapshot.accessToken;
-    const back = withAccessQuery(`${shop}/index.html`, accessToken);
+    const publicKey = orderPublicKey(saved) || snapshot.publicKey;
+    const back = withAccessQuery(`${shop}/index.html`, publicKey);
     const items = preferenceItems(quote);
 
     if (DEMO_PAYMENTS) {
@@ -327,7 +324,7 @@ app.post("/api/checkout", rateLimit, async (req, res) => {
       return res.json({
         demo: true,
         orderId,
-        accessToken,
+        publicKey,
         trackingId: orderId,
         total: quote.total,
         shipping: quote.shipping,
@@ -392,7 +389,7 @@ app.post("/api/checkout", rateLimit, async (req, res) => {
     await rememberOrder(orderId, { preferenceId: result.id });
     return res.json({
       orderId,
-      accessToken,
+      publicKey,
       trackingId: orderId,
       total: quote.total,
       shipping: quote.shipping,
@@ -501,7 +498,7 @@ app.get("/api/order/:orderId", rateLimit, async (req, res) => {
       }
       paymentMatched = String(result.external_reference || "") === orderId;
       latest = (await rememberOrder(orderId, { status: result.status || "unknown", paymentId })) || latest;
-    } else if (!isPaymentApproved(stored) && orderAccessGranted(stored, requestOrderAccess(req))) {
+    } else if (!isPaymentApproved(stored) && canAccessPublicOrder(stored, { publicKey: requestPublicKey(req) })) {
       const found = await payment.search({
         options: {
           external_reference: orderId,
@@ -640,7 +637,10 @@ app.post("/api/orders/:orderId/shipped", rateLimit, async (req, res) => {
 app.post("/api/webhooks/mercadopago", async (req, res) => {
   const resource = webhookResource(req.body || {}, req.query || {});
   const dataId = resource.id || String(req.query["data.id"] || "").trim();
-  if (MP_WEBHOOK_SECRET) {
+  if (MODE === "live") {
+    if (!MP_WEBHOOK_SECRET) {
+      return res.status(401).json({ error: "invalid_signature" });
+    }
     const ok = isValidWebhookSignature({
       xSignature: req.get("x-signature"),
       xRequestId: req.get("x-request-id"),
@@ -650,8 +650,16 @@ app.post("/api/webhooks/mercadopago", async (req, res) => {
     if (!ok) {
       return res.status(401).json({ error: "invalid_signature" });
     }
-  } else if (MODE === "live") {
-    console.warn("webhook_unsigned");
+  } else if (MP_WEBHOOK_SECRET) {
+    const ok = isValidWebhookSignature({
+      xSignature: req.get("x-signature"),
+      xRequestId: req.get("x-request-id"),
+      dataId,
+      secret: MP_WEBHOOK_SECRET,
+    });
+    if (!ok) {
+      return res.status(401).json({ error: "invalid_signature" });
+    }
   }
 
   if (DEMO_PAYMENTS || !MP_ACCESS_TOKEN) {

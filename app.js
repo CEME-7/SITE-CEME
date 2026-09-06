@@ -35,6 +35,15 @@
     return (I18N[state.lang] && I18N[state.lang][key]) || I18N.pt[key] || key;
   }
 
+  function escapeHtml(value) {
+    return String(value ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+  }
+
   function money(amountBrl) {
     return Number(amountBrl).toLocaleString(LOCALES[state.lang] || "pt-BR", {
       style: "currency",
@@ -240,27 +249,27 @@
     const p = localizedProduct(raw);
     const audioBlock = p.audio
       ? `<div class="audio-row">
-            <button class="audio-btn" type="button" data-audio="${p.audio}" aria-pressed="false">
+            <button class="audio-btn" type="button" data-audio="${escapeHtml(p.audio)}" aria-pressed="false">
               <span class="audio-icon" aria-hidden="true"></span>
-              <span class="audio-label">${t("listenAudio")}</span>
+              <span class="audio-label">${escapeHtml(t("listenAudio"))}</span>
             </button>
             <audio preload="none"></audio>
           </div>`
       : "";
     const actions = `<div class="card-actions">
-            <button class="btn btn-ghost" type="button" data-add="${p.id}">${t("add")}</button>
-            <button class="btn btn-gold" type="button" data-buy="${p.id}">${t("buy")}</button>
+            <button class="btn btn-ghost" type="button" data-add="${escapeHtml(p.id)}">${escapeHtml(t("add"))}</button>
+            <button class="btn btn-gold" type="button" data-buy="${escapeHtml(p.id)}">${escapeHtml(t("buy"))}</button>
           </div>`;
     return `
-      <article class="card" data-id="${p.id}" data-category="${p.category}">
-        <button class="card-media" type="button" data-open="${p.id}" aria-label="${t("detailsOf")} ${p.name}">
-          <img src="${p.image}" alt="${p.name} — ${p.tagline}" loading="lazy" width="900" height="1272">
+      <article class="card" data-id="${escapeHtml(p.id)}" data-category="${escapeHtml(p.category)}">
+        <button class="card-media" type="button" data-open="${escapeHtml(p.id)}" aria-label="${escapeHtml(t("detailsOf"))} ${escapeHtml(p.name)}">
+          <img src="${escapeHtml(p.image)}" alt="${escapeHtml(p.name)} — ${escapeHtml(p.tagline)}" loading="lazy" width="900" height="1272">
         </button>
         <div class="card-body">
-          <span class="pill">${p.categoryLabel} · ${p.volume}</span>
-          <h3>${p.name}</h3>
-          <p class="tagline">${p.tagline}</p>
-          <p class="price">${money(p.price)}</p>
+          <span class="pill">${escapeHtml(p.categoryLabel)} · ${escapeHtml(p.volume)}</span>
+          <h3>${escapeHtml(p.name)}</h3>
+          <p class="tagline">${escapeHtml(p.tagline)}</p>
+          <p class="price">${escapeHtml(money(p.price))}</p>
           ${audioBlock}
           ${actions}
         </div>
@@ -300,8 +309,8 @@
     if (!wrap) return;
     wrap.innerHTML = CATEGORY_KEYS.map(
       (c) =>
-        `<button type="button" class="filter-btn ${c === state.filter ? "is-active" : ""}" data-filter="${c}">${t(
-          `cat_${c}`
+        `<button type="button" class="filter-btn ${c === state.filter ? "is-active" : ""}" data-filter="${escapeHtml(c)}">${escapeHtml(
+          t(`cat_${c}`)
         )}</button>`
     ).join("");
   }
@@ -320,7 +329,7 @@
     $("#modal-tag").textContent = p.tagline;
     $("#modal-price").textContent = money(p.price);
     $("#modal-desc").textContent = p.description;
-    $("#modal-indications").innerHTML = p.indications.map((i) => `<li>${i}</li>`).join("");
+    $("#modal-indications").innerHTML = p.indications.map((i) => `<li>${escapeHtml(i)}</li>`).join("");
     $("#modal-add").dataset.add = p.id;
     $("#modal-buy").dataset.buy = p.id;
     $("#modal-add").textContent = t("add");
@@ -390,17 +399,17 @@
         const p = PRODUCTS.find((x) => x.id === item.id);
         return `
           <li class="cart-item">
-            <img src="${p.image}" alt="">
+            <img src="${escapeHtml(p.image)}" alt="">
             <div>
-              <strong>${p.name}</strong>
-              <span>${money(p.price)}</span>
+              <strong>${escapeHtml(p.name)}</strong>
+              <span>${escapeHtml(money(p.price))}</span>
               <div class="qty">
-                <button type="button" data-qty-minus="${p.id}" aria-label="${t("decrease")}">−</button>
-                <input type="number" min="1" value="${item.qty}" data-qty="${p.id}" aria-label="${t("qtyOf")} ${p.name}">
-                <button type="button" data-qty-plus="${p.id}" aria-label="${t("increase")}">+</button>
+                <button type="button" data-qty-minus="${escapeHtml(p.id)}" aria-label="${escapeHtml(t("decrease"))}">−</button>
+                <input type="number" min="1" value="${Number(item.qty)}" data-qty="${escapeHtml(p.id)}" aria-label="${escapeHtml(t("qtyOf"))} ${escapeHtml(p.name)}">
+                <button type="button" data-qty-plus="${escapeHtml(p.id)}" aria-label="${escapeHtml(t("increase"))}">+</button>
               </div>
             </div>
-            <button type="button" class="icon-btn" data-remove="${p.id}" aria-label="${t("remove")} ${p.name}">×</button>
+            <button type="button" class="icon-btn" data-remove="${escapeHtml(p.id)}" aria-label="${escapeHtml(t("remove"))} ${escapeHtml(p.name)}">×</button>
           </li>
         `;
       })

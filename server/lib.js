@@ -1,4 +1,4 @@
-import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
+import { createHmac, randomUUID, timingSafeEqual } from "node:crypto";
 import { publicDigitalDownloads } from "./digital.js";
 
 export const MAX_QTY = 20;
@@ -228,30 +228,36 @@ export function timingSafeEqualText(left, right) {
   return timingSafeEqual(a, b);
 }
 
-export function createAccessToken() {
-  return randomBytes(24).toString("hex");
+export function createPublicKey() {
+  return randomUUID();
 }
 
-export function orderAccessGranted(order, { token = "", email = "" } = {}) {
-  const expectedToken = String(order?.accessToken || "").trim();
-  const givenToken = String(token || "").trim();
-  if (expectedToken && givenToken && timingSafeEqualText(expectedToken, givenToken)) {
-    return true;
-  }
-  const expectedEmail = String(order?.customer?.email || "").trim().toLowerCase();
-  const givenEmail = String(email || "").trim().toLowerCase();
-  if (expectedEmail && givenEmail && timingSafeEqualText(expectedEmail, givenEmail)) {
-    return true;
-  }
-  return false;
+/** Pedidos gravados na rodada anterior ainda podem ter accessToken. */
+export function orderPublicKey(order) {
+  return String(order?.publicKey || order?.accessToken || "").trim();
 }
 
-export function withAccessQuery(url, token) {
+export function canAccessPublicOrder(order, { publicKey = "", paymentMatched = false } = {}) {
+  if (paymentMatched) return true;
+  const expected = orderPublicKey(order);
+  const given = String(publicKey || "").trim();
+  if (!expected || !given) return false;
+  return timingSafeEqualText(expected, given);
+}
+
+export function withAccessQuery(url, publicKey) {
   const base = String(url || "").trim();
-  const t = String(token || "").trim();
-  if (!base || !t) return base;
+  const key = String(publicKey || "").trim();
+  if (!base || !key) return base;
   const join = base.includes("?") ? "&" : "?";
-  return `${base}${join}t=${encodeURIComponent(t)}`;
+  return `${base}${join}k=${encodeURIComponent(key)}`;
+}
+
+export function trackingPageUrl(siteUrl, orderId, publicKey) {
+  const shop = String(siteUrl || "").replace(/\/$/, "");
+  const id = String(orderId || "").trim();
+  if (!shop || !id) return "";
+  return withAccessQuery(`${shop}/pedidos.html?pedido=${encodeURIComponent(id)}`, publicKey);
 }
 
 export function isOriginAllowed(origin, { allowedOrigins = [], mode = "demo", serverOrigin = "" } = {}) {
@@ -562,7 +568,7 @@ export function fulfillmentSnapshot({ orderId, quote, payer, status = "pending",
   const delivery = quote?.shippingMethod === "delivery" && quote?.hasPhysical;
   return {
     orderId,
-    accessToken: createAccessToken(),
+    publicKey: createPublicKey(),
     status,
     createdAt: now(),
     shippingMethod: quote?.shippingMethod || "none",
@@ -695,7 +701,7 @@ export function publicOrderView(order) {
   const trackingCode = normalizeTrackingCode(order.trackingCode);
   return {
     orderId: order.orderId,
-    accessToken: String(order.accessToken || ""),
+    publicKey: orderPublicKey(order),
     status: order.status || "pending",
     demo: !!order.demo,
     shippingMethod: order.shippingMethod || "none",

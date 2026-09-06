@@ -5,7 +5,7 @@
   "scripts": {
     "start": "node index.js",
     "start:test": "node index.js",
-    "test": "node --test"
+    "test": "node --test && node ../scripts/security-scan.mjs"
   },
   "dependencies": {
     "cors": "^2.8.5",

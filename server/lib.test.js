@@ -30,10 +30,10 @@ import {
   fulfillmentSnapshot,
   publicOrderView,
   adminOrderView,
-  createAccessToken,
-  orderAccessGranted,
+  createPublicKey,
+  canAccessPublicOrder,
+  trackingPageUrl,
   withAccessQuery,
-  timingSafeEqualText,
   formatAddress,
   normalizeTrackingCode,
   isPaymentApproved,
@@ -255,28 +255,32 @@ test("não publica .env, docs, yaml nem a pasta server", () => {
   assert.equal(isBlockedStaticPath("/assets/img/logo.png"), false);
 });
 
-test("pedido público só abre com token ou e-mail da compra", () => {
-  const a = createAccessToken();
-  const b = createAccessToken();
-  assert.equal(a.length, 48);
+test("pedido público só abre com publicKey (UUID); e-mail não basta", () => {
+  const a = createPublicKey();
+  const b = createPublicKey();
+  assert.match(a, /^[0-9a-f-]{36}$/i);
   assert.notEqual(a, b);
-  assert.equal(timingSafeEqualText(a, a), true);
-  assert.equal(timingSafeEqualText(a, b), false);
-  assert.equal(timingSafeEqualText("abc", "ab"), false);
   const order = {
-    accessToken: a,
+    publicKey: a,
     customer: { email: "maria@email.com" },
   };
-  assert.equal(orderAccessGranted(order, { token: a }), true);
-  assert.equal(orderAccessGranted(order, { token: b }), false);
-  assert.equal(orderAccessGranted(order, { email: "maria@email.com" }), true);
-  assert.equal(orderAccessGranted(order, { email: "outra@email.com" }), false);
-  assert.equal(orderAccessGranted(order, {}), false);
+  assert.equal(canAccessPublicOrder(order, { publicKey: a }), true);
+  assert.equal(canAccessPublicOrder(order, { publicKey: b }), false);
+  assert.equal(canAccessPublicOrder(order, {}), false);
+  assert.equal(canAccessPublicOrder({ customer: { email: "maria@email.com" } }, { publicKey: a }), false);
+  assert.equal(canAccessPublicOrder(order, { paymentMatched: true }), true);
+  assert.equal(
+    canAccessPublicOrder({ accessToken: a }, { publicKey: a }),
+    true
+  );
+  assert.equal(
+    trackingPageUrl("https://www.familiaceme.com.br/", "CEME-1", a),
+    `https://www.familiaceme.com.br/pedidos.html?pedido=CEME-1&k=${a}`
+  );
   assert.equal(
     withAccessQuery("https://www.familiaceme.com.br/pedidos.html?pedido=CEME-1", a),
-    `https://www.familiaceme.com.br/pedidos.html?pedido=CEME-1&t=${a}`
+    `https://www.familiaceme.com.br/pedidos.html?pedido=CEME-1&k=${a}`
   );
-  assert.equal(withAccessQuery("https://loja.example/index.html", a).includes("t="), true);
 });
 
 test("rejeita payload com dados de cartão", () => {
@@ -528,8 +532,8 @@ test("guarda nome, endereço e itens do pedido sem cadastro de membro", () => {
   assert.equal(pub.email, undefined);
   assert.equal(pub.shipped, false);
   assert.equal(pub.customerName, "Maria Silva");
-  assert.equal(String(snap.accessToken || "").length, 48);
-  assert.equal(pub.accessToken, snap.accessToken);
+  assert.match(String(snap.publicKey || ""), /^[0-9a-f-]{36}$/i);
+  assert.equal(pub.publicKey, snap.publicKey);
   const admin = adminOrderView(snap);
   assert.equal(admin.cpf, undefined);
   assert.equal(admin.email, "maria@email.com");

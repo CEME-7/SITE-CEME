@@ -83,40 +83,44 @@
     return `<ol class="track-steps">${items}</ol>`;
   }
 
-  function accessTokenFor(orderId, fromOrder) {
+  function publicKeyFor(orderId, fromOrder) {
     const id = String(orderId || "").trim();
-    const fromResult = String(fromOrder?.accessToken || "").trim();
+    const fromResult = String(fromOrder?.publicKey || fromOrder?.accessToken || "").trim();
     if (fromResult) {
       try {
-        sessionStorage.setItem(`ceme-access:${id}`, fromResult);
+        sessionStorage.setItem(`ceme-order-key:${id}`, fromResult);
       } catch {
         /* ignore */
       }
       return fromResult;
     }
     try {
-      const fromUrl = new URLSearchParams(location.search).get("t") || "";
+      const params = new URLSearchParams(location.search);
+      const fromUrl = params.get("k") || params.get("t") || "";
       if (fromUrl) {
-        sessionStorage.setItem(`ceme-access:${id}`, fromUrl);
+        sessionStorage.setItem(`ceme-order-key:${id}`, fromUrl);
         return fromUrl;
       }
-      return (id && sessionStorage.getItem(`ceme-access:${id}`)) || "";
+      return (
+        (id && (sessionStorage.getItem(`ceme-order-key:${id}`) || sessionStorage.getItem(`ceme-access:${id}`))) ||
+        ""
+      );
     } catch {
       return "";
     }
   }
 
-  function withAccessQuery(url, token) {
+  function withAccessQuery(url, publicKey) {
     const base = String(url || "").trim();
-    const t = String(token || "").trim();
-    if (!base || !t) return base;
-    return `${base}${base.includes("?") ? "&" : "?"}t=${encodeURIComponent(t)}`;
+    const key = String(publicKey || "").trim();
+    if (!base || !key) return base;
+    return `${base}${base.includes("?") ? "&" : "?"}k=${encodeURIComponent(key)}`;
   }
 
   function render(order) {
     const box = document.getElementById("track-result");
     const base = apiBase();
-    const token = accessTokenFor(order.orderId, order);
+    const token = publicKeyFor(order.orderId, order);
     const items = (order.items || [])
       .map((item) => `<li>${escapeHtml(item.name)} × ${Number(item.qty)}</li>`)
       .join("");
@@ -169,16 +173,14 @@
       error.hidden = false;
       return;
     }
-    const token = accessTokenFor(id);
-    const email = String(document.getElementById("track-email")?.value || "").trim();
-    if (!token && !email) {
-      error.textContent = "Informe o e-mail da compra ou abra o link do comprovante (ele já traz o acesso).";
+    const key = publicKeyFor(id) || String(document.getElementById("track-key")?.value || "").trim();
+    if (!key) {
+      error.textContent = "Informe a chave do pedido ou abra o link do comprovante (ele já traz o acesso).";
       error.hidden = false;
       return;
     }
     const qs = new URLSearchParams();
-    if (token) qs.set("t", token);
-    if (email) qs.set("email", email);
+    qs.set("k", key);
     try {
       const res = await fetch(`${base}/api/order/${encodeURIComponent(id)}?${qs}`);
       const data = await res.json().catch(() => ({}));
@@ -186,13 +188,16 @@
         error.textContent =
           data.error === "payment_pending" || data.error === "payment_not_confirmed" || data.error === "payment_rejected"
             ? "O Mercado Pago não confirmou este pagamento. O pedido só aparece depois da aprovação."
-            : "Não encontramos esse pedido. Confira o número e o e-mail da compra, ou use o link do e-mail/WhatsApp.";
+            : "Não encontramos esse pedido. Confira o número e a chave, ou use o link do e-mail/WhatsApp.";
         error.hidden = false;
         return;
       }
+      if (data.publicKey && document.getElementById("track-key")) {
+        document.getElementById("track-key").value = data.publicKey;
+      }
       render(data);
     } catch {
-      error.textContent = "Não encontramos esse pedido. Confira o número e o e-mail da compra.";
+      error.textContent = "Não encontramos esse pedido. Confira o número e a chave.";
       error.hidden = false;
     }
   }
@@ -204,9 +209,9 @@
 
   const params = new URLSearchParams(location.search);
   const fromUrl = params.get("pedido");
-  const fromEmail = params.get("email");
-  if (fromEmail && document.getElementById("track-email")) {
-    document.getElementById("track-email").value = fromEmail;
+  const fromKey = params.get("k") || params.get("t");
+  if (fromKey && document.getElementById("track-key")) {
+    document.getElementById("track-key").value = fromKey;
   }
   if (fromUrl) {
     document.getElementById("track-order").value = fromUrl;
