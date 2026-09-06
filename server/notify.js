@@ -46,16 +46,26 @@ export function arrivesTomorrowSubject(orderId) {
   return `Sua entrega chega amanhã — pedido ${orderId}`;
 }
 
-export function paidMessage({ name = "", orderId = "", total = 0, trackingUrl = "", downloadUrl = "" } = {}) {
+export function paidMessage({
+  name = "",
+  orderId = "",
+  total = 0,
+  trackingUrl = "",
+  downloadUrl = "",
+  publicKey = "",
+} = {}) {
   const who = String(name || "").trim().split(/\s+/)[0] || "olá";
   const id = String(orderId || "").trim();
+  const key = String(publicKey || "").trim();
   const money = Number(total || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
   const lines = [
     `Olá ${who}, recebemos o pagamento do seu pedido ${id} na ${STORE_NAME}.`,
     `Total: ${money}.`,
   ];
-  if (downloadUrl) lines.push(`Baixe o álbum completo: ${downloadUrl}`);
+  if (key) lines.push(`Chave de rastreio: ${key}`);
   if (trackingUrl) lines.push(`Acompanhe o pedido: ${trackingUrl}`);
+  else if (id && key) lines.push(`Acompanhe em Pedidos com o número ${id} e a chave acima.`);
+  if (downloadUrl) lines.push(`Baixe o álbum completo: ${downloadUrl}`);
   lines.push("", STORE_NAME);
   return lines.join("\n");
 }
@@ -213,6 +223,7 @@ export async function notifyPaid(order, extras = {}) {
     total: order.total,
     trackingUrl,
     downloadUrl,
+    publicKey: order.publicKey || "",
   });
   const subject = paidEmailSubject(order.orderId);
   let email = { sent: false, reason: "no_email" };

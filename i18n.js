@@ -384,8 +384,10 @@ const I18N = {
     "checkoutPayBoleto": "Boleto",
     "checkoutCupomPdf": "Baixar cupom PDF",
     "checkoutNotConfirmed": "O Mercado Pago não confirmou o pagamento. O pedido só aparece depois da aprovação. Tente de novo no Checkout Pro.",
-    "checkoutWaitingPix": "O Pix pode levar alguns segundos. Clique em ",
-    "checkoutVerifyPay": "Já paguei — verificar"Já paguei — verificar" para confirmar."
+    "checkoutWaitingPix": "O Pix pode levar alguns segundos para confirmar. Use \"Já paguei — verificar\". Guarde o número CEME e a chave de rastreio.",
+    "checkoutVerifyPay": "Já paguei — verificar",
+    "checkoutPendingKeepKey": "Pagamento ainda não confirmado pelo Mercado Pago. Guarde o pedido {order} e a chave {key}. Você pode verificar de novo a qualquer momento.",
+    "checkoutTrackCredentials": "Seu pedido é {order}. Chave de rastreio: {key}. Guarde estes dados para acompanhar em Pedidos.",
   },
   en: {
     "htmlLang": "en",
@@ -763,8 +765,10 @@ const I18N = {
     "checkoutPayBoleto": "Boleto",
     "checkoutCupomPdf": "Download PDF coupon",
     "checkoutNotConfirmed": "Mercado Pago did not confirm this payment. The order only appears after approval. Try Checkout Pro again.",
-    "checkoutWaitingPix": "Pix may take a few seconds. Tap ",
-    "checkoutVerifyPay": "I already paid — check"I already paid — check" to confirm."
+    "checkoutWaitingPix": "Pix may take a few seconds to confirm. Use \"I already paid — check\". Save your CEME number and tracking key.",
+    "checkoutVerifyPay": "I already paid — check",
+    "checkoutPendingKeepKey": "Payment not confirmed by Mercado Pago yet. Save order {order} and key {key}. You can check again anytime.",
+    "checkoutTrackCredentials": "Your order is {order}. Tracking key: {key}. Keep these to track in Orders.",
   },
   es: {
     "htmlLang": "es",
@@ -1145,8 +1149,10 @@ const I18N = {
     "checkoutPayBoleto": "Boleto",
     "checkoutCupomPdf": "Descargar cupón PDF",
     "checkoutNotConfirmed": "Mercado Pago no confirmó el pago. El pedido solo aparece después de la aprobación. Intente de nuevo en Checkout Pro.",
-    "checkoutWaitingPix": "El Pix puede tardar unos segundos. Pulse ",
-    "checkoutVerifyPay": "Ya pagué — verificar"Ya pagué — verificar" para confirmar."
+    "checkoutWaitingPix": "El Pix puede tardar unos segundos. Use \"Ya pagué — verificar\". Guarde el número CEME y la clave.",
+    "checkoutVerifyPay": "Ya pagué — verificar",
+    "checkoutPendingKeepKey": "Pago aún no confirmado por Mercado Pago. Guarde el pedido {order} y la clave {key}. Puede verificar de nuevo cuando quiera.",
+    "checkoutTrackCredentials": "Su pedido es {order}. Clave de seguimiento: {key}. Guárdelos para seguir en Pedidos.",
   },
   de: {
     "htmlLang": "de",
@@ -1527,8 +1533,10 @@ const I18N = {
     "checkoutPayBoleto": "Boleto",
     "checkoutCupomPdf": "PDF-Beleg herunterladen",
     "checkoutNotConfirmed": "Mercado Pago hat die Zahlung nicht bestätigt. Die Bestellung erscheint erst nach Freigabe. Versuchen Sie Checkout Pro erneut.",
-    "checkoutWaitingPix": "Pix kann einige Sekunden dauern. Tippen Sie auf ",
-    "checkoutVerifyPay": "Bereits bezahlt — prüfen"Bereits bezahlt — prüfen"."
+    "checkoutWaitingPix": "Pix kann einige Sekunden dauern. Nutzen Sie \"Bereits bezahlt — prüfen\". Speichern Sie CEME-Nummer und Tracking-Schlüssel.",
+    "checkoutVerifyPay": "Bereits bezahlt — prüfen",
+    "checkoutPendingKeepKey": "Zahlung noch nicht von Mercado Pago bestätigt. Bestellung {order} und Schlüssel {key} speichern. Sie können jederzeit erneut prüfen.",
+    "checkoutTrackCredentials": "Ihre Bestellung ist {order}. Tracking-Schlüssel: {key}. Aufbewahren für die Sendungsverfolgung.",
   },
   fr: {
     "htmlLang": "fr",
@@ -1909,7 +1917,9 @@ const I18N = {
     "checkoutPayBoleto": "Boleto",
     "checkoutCupomPdf": "Télécharger le coupon PDF",
     "checkoutNotConfirmed": "Mercado Pago n’a pas confirmé le paiement. La commande n’apparaît qu’après approbation. Réessayez Checkout Pro.",
-    "checkoutWaitingPix": "Le Pix peut prendre quelques secondes. Appuyez sur ",
-    "checkoutVerifyPay": "J’ai déjà payé — vérifier"J’ai déjà payé — vérifier"."
+    "checkoutWaitingPix": "Le Pix peut prendre quelques secondes. Utilisez \"J’ai déjà payé — vérifier\". Conservez le numéro CEME et la clé.",
+    "checkoutVerifyPay": "J’ai déjà payé — vérifier",
+    "checkoutPendingKeepKey": "Paiement pas encore confirmé par Mercado Pago. Gardez la commande {order} et la clé {key}. Vous pouvez vérifier à nouveau.",
+    "checkoutTrackCredentials": "Votre commande est {order}. Clé de suivi : {key}. Conservez-les pour le suivi.",
   }
 };
