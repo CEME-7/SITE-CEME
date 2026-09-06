@@ -3,7 +3,7 @@
   const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
 
   const LOCALES = { pt: "pt-BR", en: "en-US", es: "es-ES", de: "de-DE", fr: "fr-FR" };
-  const ALBUM_PRICE_BRL = 222;
+  const ALBUM_PRICE_BRL = 0.1;
   const PRODUCT_IDS = new Set(PRODUCTS.map((p) => p.id));
   const CATEGORY_KEYS = ["todos", "mente", "comunicacao", "sensorial", "emocao", "detox", "corpo", "frequencial"];
 

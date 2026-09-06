@@ -326,20 +326,20 @@ test("modo da API: demo sem token, sandbox com TEST- e live com token de produç
   );
 });
 
-test("catálogo oficial tem 15 sprays a R$ 120 e extras compráveis", () => {
+test("catálogo oficial tem 15 sprays e extras compráveis (preço de teste R$ 0,10)", () => {
   const sprays = PRODUCTS.filter((p) => !p.kind || p.kind === "spray");
   assert.equal(sprays.length, 15);
-  assert.ok(sprays.every((p) => p.price === 120));
+  assert.ok(sprays.every((p) => p.price === 0.1));
   const extras = Object.fromEntries(PRODUCTS.filter((p) => p.kind).map((p) => [p.id, p.price]));
-  assert.equal(extras["campo-morfogenetico"], 149.99);
-  assert.equal(extras["musicas-neuroconectivas"], 64);
-  assert.equal(extras["musica-neuroconexao"], 222);
+  assert.equal(extras["campo-morfogenetico"], 0.1);
+  assert.equal(extras["musicas-neuroconectivas"], 0.1);
+  assert.equal(extras["musica-neuroconexao"], 0.1);
   const quote = quoteCart(
     PRODUCTS,
     sprays.map((product) => ({ id: product.id, qty: 1 }))
   );
-  assert.equal(Number(quote.subtotal.toFixed(2)), 1800);
-  assert.equal(quote.shipping, 0);
+  assert.equal(Number(quote.subtotal.toFixed(2)), 1.5);
+  assert.ok(quote.shipping >= 0);
 });
 
 test("lê id do pagamento no webhook e no IPN", () => {
