@@ -519,7 +519,16 @@ app.get("/api/order/:orderId", rateLimit, async (req, res) => {
       return res.status(404).json({ error: "not_found" });
     }
     if (!isPaymentApproved(latest)) {
-      return res.status(404).json({ error: unpaidPaymentError(latest?.status) });
+      // Cliente no retorno do Pix precisa conseguir consultar status pending e tentar de novo.
+      return res.status(200).json({
+        orderId: latest?.orderId || orderId,
+        status: latest?.status || "pending",
+        publicKey: orderPublicKey(latest) || "",
+        paymentType: latest?.paymentType || "",
+        paymentMethod: latest?.paymentMethod || "",
+        isPix: !!latest && (latest.paymentMethod === "pix" || latest.paymentType === "bank_transfer"),
+        error: unpaidPaymentError(latest?.status),
+      });
     }
     latest = await maybeNotifyArrival(latest);
     return res.json(publicOrderView(latest));

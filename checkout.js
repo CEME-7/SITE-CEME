@@ -356,6 +356,11 @@
     if (title) {
       title.textContent = step === "done" ? t("checkoutSuccessTitle") : t("checkoutTitle");
     }
+  
+    const verifyBtn = document.getElementById("checkout-verify-pay");
+    if (verifyBtn) {
+      verifyBtn.hidden = !(step === "pay" && loadReturnContext()?.orderId);
+    }
   }
 
   async function fillAddressFromCep() {
@@ -654,12 +659,113 @@
     history.replaceState({}, "", url.pathname + url.search + url.hash);
   }
 
+  function sleep(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  function saveReturnContext(ctx) {
+    try {
+      sessionStorage.setItem("ceme-mp-return", JSON.stringify(ctx));
+    } catch {
+      /* ignore */
+    }
+  }
+
+  function loadReturnContext() {
+    try {
+      const raw = sessionStorage.getItem("ceme-mp-return");
+      if (raw) return JSON.parse(raw);
+    } catch {
+      /* ignore */
+    }
+    try {
+      // Resgate: mesmo navegador que iniciou o checkout ainda tem a chave CEME-N.
+      for (let i = sessionStorage.length - 1; i >= 0; i--) {
+        const key = sessionStorage.key(i) || "";
+        if (!key.startsWith("ceme-order-key:") && !key.startsWith("ceme-access:")) continue;
+        const orderId = key.split(":").slice(1).join(":");
+        const token = sessionStorage.getItem(key) || "";
+        if (orderId && token) return { orderId, paymentId: "", token, paymentTypeHint: "" };
+      }
+    } catch {
+      /* ignore */
+    }
+    return null;
+  }
+
+  function clearReturnContext() {
+    try {
+      sessionStorage.removeItem("ceme-mp-return");
+    } catch {
+      /* ignore */
+    }
+  }
+
+  async function fetchOrderStatus(orderId, paymentId, token) {
+    const qs = new URLSearchParams();
+    if (paymentId) qs.set("payment_id", paymentId);
+    if (token) qs.set("k", token);
+    const suffix = qs.toString() ? `?${qs}` : "";
+    const res = await fetch(`${apiBase()}/api/order/${encodeURIComponent(orderId)}${suffix}`);
+    const data = await res.json().catch(() => ({}));
+    return { ok: res.ok, status: res.status, data };
+  }
+
+  async function confirmPaidOrder({ orderId, paymentId, token, paymentTypeHint = "" }) {
+    // Pix pode demorar alguns segundos para o MP refletir "approved" na API.
+    const attempts = 10;
+    let last = { ok: false, data: {} };
+    for (let i = 0; i < attempts; i++) {
+      setPayMessage(t("checkoutChecking"), "");
+      last = await fetchOrderStatus(orderId, paymentId, token);
+      if (last.data?.status === "approved") {
+        const paymentType = last.data.paymentType || paymentTypeHint || "";
+        const paymentMethod = last.data.paymentMethod || "";
+        finishOrder({
+          orderId: last.data.orderId || orderId,
+          publicKey: last.data.publicKey || token,
+          customerName: last.data.customerName || "",
+          total: last.data.total,
+          paymentType,
+          paymentMethod,
+          isPix: last.data.isPix === true || isPixPayment({ paymentType, paymentMethod }),
+          demo: !!last.data.demo,
+          status: "approved",
+        });
+        clearReturnContext();
+        return true;
+      }
+      const pending =
+        ["pending", "in_process", "inprocess", "authorized"].includes(
+          String(last.data?.status || "").toLowerCase()
+        ) ||
+        last.data?.error === "payment_not_confirmed" ||
+        last.status === 404;
+      if (!pending && last.ok === false && last.status >= 500) {
+        await sleep(1200);
+        continue;
+      }
+      if (!pending && i >= 2) break;
+      await sleep(1500);
+    }
+    return false;
+  }
+
   async function handleReturn() {
     const params = new URLSearchParams(location.search);
-    const orderId = params.get("external_reference") || "";
-    const paymentId = params.get("payment_id") || params.get("collection_id") || "";
+    let orderId = params.get("external_reference") || "";
+    let paymentId = params.get("payment_id") || params.get("collection_id") || "";
     const mp = params.get("mp");
-    if (!orderId && !paymentId && !mp) return false;
+    const paymentTypeHint = params.get("payment_type") || "";
+    if (!orderId && !paymentId && !mp) {
+      const saved = loadReturnContext();
+      if (saved?.orderId) {
+        orderId = saved.orderId;
+        paymentId = saved.paymentId || "";
+      } else {
+        return false;
+      }
+    }
 
     open();
     setPayMessage(t("checkoutChecking"), "");
@@ -667,6 +773,7 @@
       if (mp === "demo" || (!apiBase() && orderId)) {
         finishOrder({ orderId: orderId || `CEME-DEMO`, demo: true, status: "approved" });
         clearReturnQuery();
+        clearReturnContext();
         return true;
       }
       if (!apiBase() || !orderId) {
@@ -675,37 +782,27 @@
         clearReturnQuery();
         return true;
       }
+
       const mpStatus = String(params.get("status") || params.get("collection_status") || "").toLowerCase();
-      if (mpStatus && mpStatus !== "approved") {
+      const rejected = ["rejected", "cancelled", "canceled", "refunded", "charged_back", "null"].includes(mpStatus);
+      if (rejected) {
         setStep("pay");
         setPayMessage(t("checkoutNotConfirmed"), "error");
         clearReturnQuery();
+        clearReturnContext();
         return true;
       }
+
       const token = orderPublicKey(orderId);
-      const qs = new URLSearchParams();
-      if (paymentId) qs.set("payment_id", paymentId);
-      if (token) qs.set("k", token);
-      const suffix = qs.toString() ? `?${qs}` : "";
-      const res = await fetch(`${apiBase()}/api/order/${encodeURIComponent(orderId)}${suffix}`);
-      const data = await res.json().catch(() => ({}));
-      if (data.status === "approved") {
-        const paymentType = data.paymentType || params.get("payment_type") || "";
-        const paymentMethod = data.paymentMethod || "";
-        finishOrder({
-          orderId: data.orderId || orderId,
-          publicKey: data.publicKey || token,
-          customerName: data.customerName || "",
-          total: data.total,
-          paymentType,
-          paymentMethod,
-          isPix: data.isPix === true || isPixPayment({ paymentType, paymentMethod }),
-          demo: !!data.demo,
-          status: "approved",
-        });
-      } else {
+      saveReturnContext({ orderId, paymentId, token, paymentTypeHint, at: Date.now() });
+
+      // Não confiar só no status da URL: Pix às vezes volta "pending" e depois aprova.
+      const ok = await confirmPaidOrder({ orderId, paymentId, token, paymentTypeHint });
+      if (!ok) {
         setStep("pay");
-        setPayMessage(t("checkoutNotConfirmed"), "error");
+        const verifyBtn = document.getElementById("checkout-verify-pay");
+        if (verifyBtn) verifyBtn.hidden = false;
+        setPayMessage(t("checkoutWaitingPix"), "error");
       }
     } catch {
       setStep("pay");
@@ -714,7 +811,6 @@
     clearReturnQuery();
     return true;
   }
-
   function open() {
     const modal = $("#checkout-modal");
     if (!modal) return;
@@ -806,6 +902,29 @@
     });
 
     handleReturn();
+
+  document.getElementById("checkout-verify-pay")?.addEventListener("click", async () => {
+    const saved = loadReturnContext();
+    if (!saved?.orderId || !apiBase()) {
+      setPayMessage(t("checkoutNotConfirmed"), "error");
+      return;
+    }
+    open();
+    setStep("pay");
+    setPayMessage(t("checkoutChecking"), "");
+    const ok = await confirmPaidOrder({
+      orderId: saved.orderId,
+      paymentId: saved.paymentId || "",
+      token: saved.token || orderPublicKey(saved.orderId),
+      paymentTypeHint: saved.paymentTypeHint || "",
+    });
+    if (!ok) {
+        const verifyBtn = document.getElementById("checkout-verify-pay");
+        if (verifyBtn) verifyBtn.hidden = false;
+        setPayMessage(t("checkoutWaitingPix"), "error");
+      }
+  });
+
   }
 
   document.addEventListener("DOMContentLoaded", bind);
