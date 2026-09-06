@@ -1,4 +1,4 @@
-import { DELIVERY_DAYS, onlyDigits } from "./lib.js";
+import { DELIVERY_DAYS, isPixPayment, onlyDigits } from "./lib.js";
 
 const STORE_NAME = "Família CEME";
 
@@ -64,11 +64,58 @@ export function paidEmailSubject(orderId) {
   return `Recebemos o pagamento do seu pedido ${orderId}`;
 }
 
-export function newSaleMessage({ name = "", orderId = "", total = 0 } = {}) {
+export function newSaleMessage({
+  name = "",
+  orderId = "",
+  total = 0,
+  publicKey = "",
+  paymentType = "",
+  paymentMethod = "",
+  trackingUrl = "",
+} = {}) {
   const who = String(name || "").trim() || "Cliente";
   const id = String(orderId || "").trim();
   const money = Number(total || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
-  return `Nova venda ${id} — ${who} — ${money}.`;
+  const pix = isPixPayment({ paymentType, paymentMethod });
+  const form = pix ? "Pix" : paymentMethod || paymentType || "outro";
+  const lines = [`Nova venda ${id} — ${who} — ${money} — ${form}.`];
+  if (publicKey) lines.push(`Chave de rastreio: ${publicKey}`);
+  if (trackingUrl) lines.push(String(trackingUrl));
+  return lines.join("\n");
+}
+
+/** Mensagem que o cliente manda no WhatsApp da loja após pagar (comprovante Pix ou aviso cartão). */
+export function customerStoreProofMessage({
+  name = "",
+  orderId = "",
+  total = 0,
+  publicKey = "",
+  trackingUrl = "",
+  paymentType = "",
+  paymentMethod = "",
+} = {}) {
+  const who = String(name || "").trim() || "Cliente";
+  const id = String(orderId || "").trim();
+  const key = String(publicKey || "").trim();
+  const money = Number(total || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+  const pix = isPixPayment({ paymentType, paymentMethod });
+  const lines = pix
+    ? [`Comprovante Pix — pedido ${id}`, `Cliente: ${who}`, `Total: ${money}`]
+    : [
+        `Pagamento confirmado — pedido ${id}`,
+        `Forma: ${paymentMethod || paymentType || "cartão/outro"}`,
+        `Cliente: ${who}`,
+        `Total: ${money}`,
+      ];
+  if (key) lines.push(`Chave de rastreio: ${key}`);
+  if (trackingUrl) lines.push(`Acompanhar: ${trackingUrl}`);
+  lines.push(
+    "",
+    pix
+      ? "Segue o comprovante do Pix para a Família CEME acompanhar o pedido."
+      : "Aviso para a Família CEME (pagamento sem comprovante Pix)."
+  );
+  return lines.join("\n");
 }
 
 export function whatsappDigits(phone) {
@@ -202,6 +249,10 @@ export async function notifyPaid(order, extras = {}) {
     name: order.customer?.name || order.customerName || "",
     orderId: order.orderId,
     total: order.total,
+    publicKey: order.publicKey || "",
+    paymentType: order.paymentType || "",
+    paymentMethod: order.paymentMethod || "",
+    trackingUrl,
   });
   try {
     if (storePhone) {

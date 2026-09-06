@@ -477,6 +477,53 @@
     return `${base}${base.includes("?") ? "&" : "?"}k=${encodeURIComponent(key)}`;
   }
 
+
+  function isPixPayment({ paymentType = "", paymentMethod = "" } = {}) {
+    const method = String(paymentMethod || "").toLowerCase();
+    const type = String(paymentType || "").toLowerCase();
+    if (method === "pix" || type === "pix" || method.includes("pix")) return true;
+    if (type === "bank_transfer") return true;
+    return false;
+  }
+
+  function storeProofMessage(result, token) {
+    const id = String(result.orderId || "").trim();
+    const who = String(result.customerName || "").trim() || "Cliente";
+    const key = String(token || result.publicKey || "").trim();
+    const money = moneyFmt(result.total);
+    const pix = !!result.isPix || isPixPayment(result);
+    const track = withAccessQuery(
+      `${location.origin}/pedidos.html?pedido=${encodeURIComponent(id)}`,
+      key
+    );
+    const lines = pix
+      ? [`Comprovante Pix — pedido ${id}`, `Cliente: ${who}`, `Total: ${money}`]
+      : [
+          `Pagamento confirmado — pedido ${id}`,
+          `Forma: ${result.paymentMethod || result.paymentType || "cartão/outro"}`,
+          `Cliente: ${who}`,
+          `Total: ${money}`,
+        ];
+    if (key) lines.push(`Chave de rastreio: ${key}`);
+    if (track) lines.push(`Acompanhar: ${track}`);
+    lines.push(
+      "",
+      pix
+        ? "Segue o comprovante do Pix para a Família CEME acompanhar o pedido."
+        : "Aviso para a Família CEME (pagamento sem comprovante Pix)."
+    );
+    return lines.join("\n");
+  }
+
+  function moneyFmt(n) {
+    return Number(n || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+  }
+
+  function storeWhatsApp() {
+    if (typeof WHATSAPP === "string" && WHATSAPP) return WHATSAPP;
+    return "5561999291377";
+  }
+
   function finishOrder(result) {
     if (result.status === "pending" || result.status === "in_process") {
       setStep("pay");
@@ -525,6 +572,21 @@
     $("#checkout-success-text").textContent = t(
       result.demo || state.demo ? "checkoutDemoSuccess" : "checkoutSuccessText"
     ).replace("{order}", result.orderId);
+
+    const proof = $("#checkout-proof-wa");
+    if (proof) {
+      const pix = !!result.isPix || isPixPayment(result);
+      const msg = storeProofMessage(result, token);
+      const wa = storeWhatsApp();
+      proof.href = `https://wa.me/${wa}?text=${encodeURIComponent(msg)}`;
+      proof.textContent = t(pix ? "checkoutSendPixProof" : "checkoutSendCardNotice");
+      proof.hidden = !paid;
+      const hint = $("#checkout-track-hint");
+      if (hint) {
+        hint.textContent = t(pix ? "checkoutPixProofHint" : "checkoutCardNoticeHint");
+      }
+    }
+
     if (shop()) shop().clearCart();
     setStep("done");
   }
@@ -628,9 +690,16 @@
       const res = await fetch(`${apiBase()}/api/order/${encodeURIComponent(orderId)}${suffix}`);
       const data = await res.json().catch(() => ({}));
       if (data.status === "approved") {
+        const paymentType = data.paymentType || params.get("payment_type") || "";
+        const paymentMethod = data.paymentMethod || "";
         finishOrder({
           orderId: data.orderId || orderId,
           publicKey: data.publicKey || token,
+          customerName: data.customerName || "",
+          total: data.total,
+          paymentType,
+          paymentMethod,
+          isPix: data.isPix === true || isPixPayment({ paymentType, paymentMethod }),
           demo: !!data.demo,
           status: "approved",
         });

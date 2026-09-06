@@ -21,6 +21,26 @@ export function isPaymentApproved(order) {
   return String(order?.status || "").toLowerCase() === "approved";
 }
 
+/** Pix no Checkout Pro: payment_method_id=pix ou payment_type_id=bank_transfer. */
+export function isPixPayment({ paymentType = "", paymentMethod = "" } = {}) {
+  const method = String(paymentMethod || "").toLowerCase();
+  const type = String(paymentType || "").toLowerCase();
+  if (method === "pix" || type === "pix" || method.includes("pix")) return true;
+  if (type === "bank_transfer") return true;
+  return false;
+}
+
+export function paymentPatchFromMp(result = {}) {
+  const paymentId = String(result.id || "").replace(/\D/g, "");
+  const patch = {
+    status: result.status || "unknown",
+    paymentType: String(result.payment_type_id || "").trim(),
+    paymentMethod: String(result.payment_method_id || "").trim(),
+  };
+  if (paymentId) patch.paymentId = paymentId;
+  return patch;
+}
+
 /** Pedido sem aprovação do Mercado Pago: não aparece na loja nem no painel. */
 export function unpaidPaymentError(status) {
   return isPaymentApproved({ status }) ? "" : "payment_not_confirmed";
@@ -713,12 +733,17 @@ export function deliveryProgress(order, now = Date.now()) {
 export function publicOrderView(order) {
   if (!order) return null;
   const trackingCode = normalizeTrackingCode(order.trackingCode);
+  const paymentType = String(order.paymentType || "").trim();
+  const paymentMethod = String(order.paymentMethod || "").trim();
   return {
     orderId: order.orderId,
     publicKey: orderPublicKey(order),
     status: order.status || "pending",
     demo: !!order.demo,
     shippingMethod: order.shippingMethod || "none",
+    paymentType,
+    paymentMethod,
+    isPix: isPixPayment({ paymentType, paymentMethod }),
     items: (order.items || []).map((item) => ({
       id: item.id || "",
       name: item.name,
