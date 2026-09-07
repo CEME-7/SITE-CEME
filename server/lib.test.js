@@ -153,19 +153,19 @@ test("cartão de demonstração: aprovado, recusado e inválido", () => {
   assert.equal(demoCardDecision("1234"), "invalid");
 });
 
-test("frete zerado no modo de teste (todas as regiões e frete grátis desde R$ 0)", () => {
+test("frete por CEP, retirada grátis e frete grátis acima do limite", () => {
   assert.equal(shippingRegion("70863540"), "df");
   assert.equal(shippingRegion("01310100"), "sudeste");
-  assert.equal(calcShipping({ method: "pickup", hasPhysical: true, subtotal: 0.1, freeFrom: 0 }), 0);
+  assert.equal(calcShipping({ method: "pickup", hasPhysical: true, subtotal: 120, freeFrom: 360 }), 0);
   assert.equal(
-    calcShipping({ method: "delivery", cep: "70863540", hasPhysical: true, subtotal: 0.1, freeFrom: 0 }),
-    0
+    calcShipping({ method: "delivery", cep: "70863540", hasPhysical: true, subtotal: 120, freeFrom: 360 }),
+    15
   );
   assert.equal(
-    calcShipping({ method: "delivery", cep: "01310100", hasPhysical: true, subtotal: 0.1, freeFrom: 0 }),
+    calcShipping({ method: "delivery", cep: "70863540", hasPhysical: true, subtotal: 360, freeFrom: 360 }),
     0
   );
-  assert.equal(calcShipping({ method: "delivery", hasPhysical: false, subtotal: 0.1 }), 0);
+  assert.equal(calcShipping({ method: "delivery", hasPhysical: false, subtotal: 8 }), 0);
 });
 
 test("álbum digital não entra no frete", () => {
@@ -298,17 +298,16 @@ test("rejeita payload com dados de cartão", () => {
   assert.equal(hasForbiddenCardPayload({ token: "tok", payer: { cpf: "52998224725" } }), false);
 });
 
-test("itens da preferência do Checkout Pro usam preço do catálogo (frete zero no teste)", () => {
+test("itens da preferência do Checkout Pro usam preço do catálogo e somam o frete", () => {
   const quote = quoteCart(products, [{ id: "neurocodigos", qty: 1 }], {
     shippingMethod: "delivery",
     cep: "01310100",
-    freeFrom: 0,
+    freeFrom: 360,
   });
   const items = preferenceItems(quote);
   assert.equal(items[0].unit_price, 120);
   assert.equal(items[0].currency_id, "BRL");
-  assert.equal(quote.shipping, 0);
-  assert.equal(items.some((item) => item.id === "frete"), false);
+  assert.ok(items.some((item) => item.id === "frete"));
 });
 
 test("não devolve mensagem crua de erro interno", () => {
@@ -336,19 +335,19 @@ test("modo da API: demo sem token, sandbox com TEST- e live com token de produç
   );
 });
 
-test("catálogo oficial tem 15 sprays e extras compráveis (preço de teste R$ 0,10)", () => {
+test("catálogo oficial tem 15 sprays e extras compráveis", () => {
   const sprays = PRODUCTS.filter((p) => !p.kind || p.kind === "spray");
   assert.equal(sprays.length, 15);
-  assert.ok(sprays.every((p) => p.price === 0.1));
+  assert.ok(sprays.every((p) => p.price === 120));
   const extras = Object.fromEntries(PRODUCTS.filter((p) => p.kind).map((p) => [p.id, p.price]));
-  assert.equal(extras["campo-morfogenetico"], 0.1);
-  assert.equal(extras["musicas-neuroconectivas"], 0.1);
-  assert.equal(extras["musica-neuroconexao"], 0.1);
+  assert.equal(extras["campo-morfogenetico"], 149.99);
+  assert.equal(extras["musicas-neuroconectivas"], 64);
+  assert.equal(extras["musica-neuroconexao"], 222);
   const quote = quoteCart(
     PRODUCTS,
     sprays.map((product) => ({ id: product.id, qty: 1 }))
   );
-  assert.equal(Number(quote.subtotal.toFixed(2)), 1.5);
+  assert.equal(Number(quote.subtotal.toFixed(2)), 1800);
   assert.ok(quote.shipping >= 0);
 });
 

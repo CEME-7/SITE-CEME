@@ -54,7 +54,11 @@ const SITE_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..
 
 const PORT = Number(process.env.PORT) || 3001;
 const MAX_INSTALLMENTS = Number(process.env.MAX_INSTALLMENTS || 3);
-const FREE_FROM = Number(process.env.FREE_SHIPPING_FROM || FREE_SHIPPING_FROM);
+const parsedFreeFrom = Number(process.env.FREE_SHIPPING_FROM);
+const FREE_FROM =
+  Number.isFinite(parsedFreeFrom) && parsedFreeFrom > 0
+    ? parsedFreeFrom
+    : FREE_SHIPPING_FROM;
 const MP_ACCESS_TOKEN = process.env.MP_ACCESS_TOKEN || "";
 const MP_PUBLIC_KEY = process.env.MP_PUBLIC_KEY || "";
 const MODE = paymentMode({
@@ -780,7 +784,7 @@ async function bootStore() {
   }
 }
 
-console.log('ceme_deploy_stamp', '2026-09-07-neuroconexao-section');
+console.log('ceme_deploy_stamp', '2026-09-07-logo-precos-reais');
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`Loja CEME em http://127.0.0.1:${PORT}  (mode=${MODE}, storage=${ordersBackend()}, durable=${ordersDurable()})`);
   void bootStore();
