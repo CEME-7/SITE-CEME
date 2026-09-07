@@ -1674,6 +1674,7 @@ const I18N = {
     "neuroconexaoTitle": "NeuroConexão",
     "neuroconexaoP1": "NeuroConexão est un réseau de soutien de rencontres collectives hebdomadaires pour celles et ceux qui veulent entrer dans l’Écosystème Amour en Mouvement CEME ou maintenir leur propre amour de façon accessible et intégrée.",
     "neuroconexaoP2": "Nous nous retrouvons tous les mardis, de 12h à 13h, pour nous NeuroConnecter en groupe et développer notre propre écosystème d’Amour en Mouvement.",
+    "neuroconexaoCoverAlt": "Logo NeuroConexão — Unis dans l’Appartenance et le But",
     "neuroconexaoCta": "Je veux participer à NeuroConexão",
     "methodKicker": "La Méthode",
     "methodTitle": "Plus qu’un traitement, une nouvelle façon de vivre",
