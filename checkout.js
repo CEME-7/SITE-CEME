@@ -31,6 +31,8 @@
     lastQuoteTotal: 0,
     idempotencyKey: "",
     shipMethod: "delivery",
+    waProofPending: false,
+    waProofOrderId: "",
   };
 
   function t(key) {
@@ -502,23 +504,96 @@
       `${location.origin}/pedidos.html?pedido=${encodeURIComponent(id)}`,
       key
     );
-    const lines = pix
-      ? [`Comprovante Pix — pedido ${id}`, `Cliente: ${who}`, `Total: ${money}`]
-      : [
-          `Pagamento confirmado — pedido ${id}`,
-          `Forma: ${result.paymentMethod || result.paymentType || "cartão/outro"}`,
-          `Cliente: ${who}`,
-          `Total: ${money}`,
-        ];
-    if (key) lines.push(`Chave de rastreio: ${key}`);
-    if (track) lines.push(`Acompanhar: ${track}`);
+    const lines = [
+      pix ? `Comprovante Pix — Família CEME` : `Pagamento confirmado — Família CEME`,
+      `Número de rastreio: ${id}`,
+      `Chave de rastreio: ${key || "—"}`,
+      `Cliente: ${who}`,
+      `Total: ${money}`,
+    ];
+    if (!pix) {
+      lines.splice(1, 0, `Forma: ${result.paymentMethod || result.paymentType || "cartão/outro"}`);
+    }
+    if (track) lines.push(`Acompanhar pedido: ${track}`);
     lines.push(
       "",
       pix
-        ? "Segue o comprovante do Pix para a Família CEME acompanhar o pedido."
-        : "Aviso para a Família CEME (pagamento sem comprovante Pix)."
+        ? "Documento do cliente: envio o comprovante Pix com número e chave de rastreio para a loja registrar o pedido."
+        : "Documento do cliente: envio os dados do pedido (número e chave de rastreio) para a loja registrar."
     );
     return lines.join("\n");
+  }
+
+  function openStoreProofWhatsApp(result, token) {
+    const msg = storeProofMessage(result, token);
+    const wa = storeWhatsApp();
+    const url = `https://wa.me/${wa}?text=${encodeURIComponent(msg)}`;
+    const proof = $("#checkout-proof-wa");
+    if (proof) {
+      proof.href = url;
+      proof.hidden = false;
+    }
+    try {
+      const win = window.open(url, "_blank", "noopener");
+      if (!win) {
+        // Popup bloqueado: o botão obrigatório permanece como caminho principal.
+        return { url, opened: false };
+      }
+      return { url, opened: true };
+    } catch {
+      return { url, opened: false };
+    }
+  }
+
+  function setSuccessExtrasLocked(locked) {
+    ["checkout-cupom-link", "checkout-album-link", "checkout-track-link", "checkout-success-close"].forEach((id) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      // Sempre remove listener antigo para não empilhar em reentradas.
+      if (el.tagName === "A") el.removeEventListener("click", blockUntilWhatsApp, true);
+      if (locked) {
+        el.setAttribute("data-wa-locked", "1");
+        el.classList.add("is-wa-locked");
+        if (el.tagName === "A") {
+          const current = el.getAttribute("href") || "";
+          if (!el.dataset.hrefBackup && current && current !== "#") {
+            el.dataset.hrefBackup = current;
+          }
+          el.setAttribute("href", "#");
+          el.addEventListener("click", blockUntilWhatsApp, true);
+        } else {
+          el.disabled = true;
+        }
+      } else {
+        el.classList.remove("is-wa-locked");
+        el.removeAttribute("data-wa-locked");
+        if (el.tagName === "A") {
+          if (el.dataset.hrefBackup) {
+            el.setAttribute("href", el.dataset.hrefBackup);
+            delete el.dataset.hrefBackup;
+          }
+        } else {
+          el.disabled = false;
+        }
+      }
+    });
+    const unlock = document.getElementById("checkout-wa-sent");
+    if (unlock) unlock.hidden = !locked;
+  }
+
+  function blockUntilWhatsApp(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    const hint = $("#checkout-track-hint");
+    if (hint) hint.textContent = t("checkoutWhatsAppOpened");
+    const proof = $("#checkout-proof-wa");
+    if (proof?.href && !proof.href.endsWith("#")) {
+      try {
+        window.open(proof.href, "_blank", "noopener");
+      } catch {
+        /* ignore */
+      }
+    }
   }
 
   function moneyFmt(n) {
@@ -585,18 +660,28 @@
       result.demo || state.demo ? "checkoutDemoSuccess" : "checkoutSuccessText"
     ).replace("{order}", result.orderId);
 
+    const pix = !!result.isPix || isPixPayment(result);
     const proof = $("#checkout-proof-wa");
+    const opened = openStoreProofWhatsApp(result, token);
     if (proof) {
-      const pix = !!result.isPix || isPixPayment(result);
-      const msg = storeProofMessage(result, token);
-      const wa = storeWhatsApp();
-      proof.href = `https://wa.me/${wa}?text=${encodeURIComponent(msg)}`;
       proof.textContent = t(pix ? "checkoutSendPixProof" : "checkoutSendCardNotice");
       proof.hidden = !paid;
-      const hint = $("#checkout-track-hint");
-      if (hint) {
-        hint.textContent = t(pix ? "checkoutPixProofHint" : "checkoutCardNoticeHint");
-      }
+      proof.setAttribute("aria-required", "true");
+    }
+    const hint = $("#checkout-track-hint");
+    if (hint) {
+      hint.textContent = opened.opened
+        ? t("checkoutWhatsAppOpened")
+        : t("checkoutWhatsAppPopupBlocked");
+    }
+    // Obrigatório documentar no WhatsApp antes dos outros atalhos.
+    setSuccessExtrasLocked(true);
+    state.waProofPending = true;
+    state.waProofOrderId = result.orderId;
+    const mandatory = $("#checkout-wa-mandatory");
+    if (mandatory) {
+      mandatory.hidden = false;
+      mandatory.textContent = t("checkoutMustSendWhatsApp");
     }
 
     if (shop()) shop().clearCart();
@@ -890,6 +975,19 @@
   function close() {
     const modal = $("#checkout-modal");
     if (!modal) return;
+    if (state.waProofPending && state.step === "done") {
+      const hint = $("#checkout-track-hint");
+      if (hint) hint.textContent = t("checkoutWhatsAppOpened");
+      const proof = $("#checkout-proof-wa");
+      if (proof?.href && !proof.href.endsWith("#")) {
+        try {
+          window.open(proof.href, "_blank", "noopener");
+        } catch {
+          /* ignore */
+        }
+      }
+      return;
+    }
     modal.classList.remove("is-open");
     modal.hidden = true;
     modal.setAttribute("aria-hidden", "true");
@@ -952,6 +1050,21 @@
     document.addEventListener("keydown", (e) => {
       if (e.key === "Escape" && !modal.hidden) close();
     });
+
+
+  document.getElementById("checkout-wa-sent")?.addEventListener("click", () => {
+    state.waProofPending = false;
+    setSuccessExtrasLocked(false);
+    const mandatory = $("#checkout-wa-mandatory");
+    if (mandatory) mandatory.hidden = true;
+    const hint = $("#checkout-track-hint");
+    if (hint) hint.textContent = t("checkoutWhatsAppThanks");
+  });
+
+  document.getElementById("checkout-proof-wa")?.addEventListener("click", () => {
+    const hint = $("#checkout-track-hint");
+    if (hint) hint.textContent = t("checkoutWhatsAppOpened");
+  });
 
     handleReturn();
 
