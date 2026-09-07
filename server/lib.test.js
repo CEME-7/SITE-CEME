@@ -103,7 +103,9 @@ test("valida dados de entrega e permite pedido sem endereço na retirada", () =>
   const payer = validatePayer({
     name: "Maria Silva",
     email: "maria@email.com",
+    emailConfirm: "maria@email.com",
     phone: "61999991111",
+    phoneConfirm: "61999991111",
     cpf: "52998224725",
     cep: "70863540",
     street: "CLN 211",
@@ -117,7 +119,9 @@ test("valida dados de entrega e permite pedido sem endereço na retirada", () =>
   const noCpf = validatePayer({
     name: "Maria Silva",
     email: "maria@email.com",
+    emailConfirm: "maria@email.com",
     phone: "61999991111",
+    phoneConfirm: "61999991111",
     cep: "70863540",
     street: "CLN 211",
     number: "211",
@@ -130,7 +134,9 @@ test("valida dados de entrega e permite pedido sem endereço na retirada", () =>
     {
       name: "Maria Silva",
       email: "maria@email.com",
+      emailConfirm: "maria@email.com",
       phone: "61999991111",
+      phoneConfirm: "61999991111",
       cpf: "52998224725",
     },
     { requireAddress: false }
@@ -532,7 +538,9 @@ test("guarda nome, endereço e itens do pedido sem cadastro de membro", () => {
   const payer = validatePayer({
     name: "Maria Silva",
     email: "maria@email.com",
+    emailConfirm: "maria@email.com",
     phone: "61999991111",
+    phoneConfirm: "61999991111",
     cpf: "52998224725",
     cep: "70863540",
     street: "CLN 211",
@@ -610,7 +618,15 @@ test("valida e-mail e celular brasileiro, inclusive confirmação", () => {
     (err) => err.code === "invalid_payer" && err.fields.includes("emailConfirm")
   );
   assert.throws(
+    () => validatePayer({ ...base, emailConfirm: "" }),
+    (err) => err.code === "invalid_payer" && err.fields.includes("emailConfirm")
+  );
+  assert.throws(
     () => validatePayer({ ...base, phoneConfirm: "61988887777" }),
+    (err) => err.code === "invalid_payer" && err.fields.includes("phoneConfirm")
+  );
+  assert.throws(
+    () => validatePayer({ ...base, phoneConfirm: "" }),
     (err) => err.code === "invalid_payer" && err.fields.includes("phoneConfirm")
   );
   assert.throws(

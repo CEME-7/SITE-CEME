@@ -220,7 +220,7 @@
       setError("pay-email", t("errEmail"));
       ok = false;
     } else setError("pay-email");
-    if (data.emailConfirm.toLowerCase() !== data.email.toLowerCase()) {
+    if (!data.emailConfirm || !isEmail(data.emailConfirm) || data.emailConfirm.toLowerCase() !== data.email.toLowerCase()) {
       setError("pay-email-confirm", t("errEmailConfirm"));
       ok = false;
     } else setError("pay-email-confirm");
@@ -228,7 +228,11 @@
       setError("pay-phone", t("errPhone"));
       ok = false;
     } else setError("pay-phone");
-    if (onlyDigits(data.phoneConfirm) !== onlyDigits(data.phone)) {
+    if (
+      !data.phoneConfirm ||
+      !isBrazilianMobile(data.phoneConfirm) ||
+      brazilianMobileDigits(data.phoneConfirm) !== brazilianMobileDigits(data.phone)
+    ) {
       setError("pay-phone-confirm", t("errPhoneConfirm"));
       ok = false;
     } else setError("pay-phone-confirm");
@@ -1069,6 +1073,18 @@
     });
     $("#pay-phone-confirm")?.addEventListener("input", (e) => {
       e.target.value = maskPhone(e.target.value);
+    });
+    ["pay-email", "pay-email-confirm", "pay-phone", "pay-phone-confirm"].forEach((id) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.addEventListener("blur", () => validateData(formData()));
+      el.addEventListener("change", () => validateData(formData()));
+    });
+    // Evita colar um valor diferente no campo de confirmação sem perceber.
+    ["pay-email-confirm", "pay-phone-confirm"].forEach((id) => {
+      document.getElementById(id)?.addEventListener("paste", (e) => {
+        e.preventDefault();
+      });
     });
 
     document.addEventListener("keydown", (e) => {
