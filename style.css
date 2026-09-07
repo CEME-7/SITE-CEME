@@ -733,7 +733,8 @@ section {
   object-fit: cover;
 }
 #morfogenetico .cover-offer-media img,
-.product-card img[src*="analise-campo-morfogenetico"] {
+.card img[src*="analise-campo-morfogenetico"],
+.card-media img[src*="analise-campo-morfogenetico"] {
   aspect-ratio: 11 / 6;
   object-fit: contain;
   background: #f4f1ea;
