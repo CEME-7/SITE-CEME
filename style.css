@@ -439,7 +439,7 @@ section {
 }
 .content-prose {
   max-width: 720px;
-  margin: 0 0 32px;
+  margin: 0 0 24px;
 }
 .content-prose p {
   color: var(--muted);
@@ -447,6 +447,12 @@ section {
 }
 .content-prose p:last-child {
   margin-bottom: 0;
+}
+.products-shop-hint {
+  max-width: 720px;
+  margin: 0 0 20px;
+  color: var(--muted);
+  font-size: 0.95rem;
 }
 
 .alt {
