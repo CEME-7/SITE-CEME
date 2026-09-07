@@ -796,13 +796,13 @@ section {
 }
 .album-note,
 .album-hotmart-hint {
-  color: rgba(247, 241, 232, 0.7);
+  color: var(--muted);
   font-size: 0.92rem;
   margin-bottom: 12px;
 }
 .price.album-price {
   margin-bottom: 14px;
-  color: #ffd700;
+  color: var(--burgundy);
 }
 .album-tracks {
   list-style: none;
@@ -810,25 +810,35 @@ section {
   grid-template-columns: 1fr 1fr;
   gap: 8px;
   margin: 0 0 18px;
+  padding: 0;
 }
 .album-tracks .audio-btn {
   width: 100%;
   justify-content: flex-start;
   min-height: 46px;
   padding: 0 14px;
-  border: 1px solid rgba(255, 215, 0, 0.22);
+  border: 1px solid rgba(107, 30, 51, 0.22);
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.06);
-  color: #f7f1e8;
+  background: #f3e9d8;
+  color: var(--burgundy);
   font-weight: 600;
+  text-align: left;
+}
+.album-tracks .audio-btn .audio-label {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: inherit;
 }
 .album-tracks .audio-btn .audio-icon {
-  border-color: transparent transparent transparent #ffd700;
+  flex: 0 0 auto;
+  border-color: transparent transparent transparent var(--burgundy);
 }
 .album-tracks .audio-btn.is-playing {
-  background: #bf00ff;
+  background: var(--burgundy);
   color: #fff;
-  border-color: #ffd700;
+  border-color: var(--burgundy);
 }
 .album-tracks .audio-btn.is-playing .audio-icon {
   background: linear-gradient(90deg, currentColor 0 3px, transparent 3px 7px, currentColor 7px 10px);
