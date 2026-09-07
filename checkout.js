@@ -691,9 +691,18 @@
   async function startMercadoPago() {
     if (state.paying) return;
     const data = formData();
-    if (!validateData(data)) return;
+    if (!validateData(data)) {
+      setStep("data");
+      setPayMessage(t("checkoutFixData"), "error");
+      const first = document.querySelector("#checkout-modal [aria-invalid='true']");
+      if (first) first.focus();
+      return;
+    }
     const q = quote();
-    if (!q.items.length || q.total <= 0) return;
+    if (!q.items.length || q.total <= 0) {
+      setPayMessage(t("checkoutEmptyCart"), "error");
+      return;
+    }
 
     state.paying = true;
     const btn = $("#checkout-pay");
@@ -701,15 +710,17 @@
       btn.disabled = true;
       btn.textContent = t("checkoutRedirecting");
     }
-    setPayMessage("");
+    setPayMessage(t("checkoutRedirecting"), "");
 
     const payload = {
       items: q.items.map((item) => ({ id: item.id, qty: item.qty })),
       shippingMethod: q.shippingMethod,
-      idempotencyKey: state.idempotencyKey,
+      idempotencyKey: state.idempotencyKey || `ceme-${Date.now()}`,
       payer: payerPayload(data),
     };
 
+    const controller = typeof AbortController !== "undefined" ? new AbortController() : null;
+    const timer = controller ? setTimeout(() => controller.abort(), 25000) : null;
     try {
       const apiUrl = apiBase();
       if (!apiUrl) {
@@ -724,6 +735,7 @@
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
+        signal: controller?.signal,
       });
       const result = await res.json().catch(() => ({}));
       if (!res.ok || !result.checkoutUrl) {
@@ -732,14 +744,26 @@
       if (result.orderId && (result.publicKey || result.accessToken)) {
         rememberPublicKey(result.orderId, result.publicKey || result.accessToken);
       }
+      if (result.orderId) {
+        saveReturnContext({
+          orderId: result.orderId,
+          paymentId: "",
+          token: result.publicKey || result.accessToken || "",
+          paymentTypeHint: "",
+          at: Date.now(),
+        });
+      }
       window.location.assign(result.checkoutUrl);
-    } catch {
-      setPayMessage(t("checkoutPayError"), "error");
+    } catch (err) {
+      const aborted = err && (err.name === "AbortError" || /abort/i.test(String(err.message || "")));
+      setPayMessage(t(aborted ? "checkoutPayTimeout" : "checkoutPayError"), "error");
       if (btn) {
         btn.disabled = false;
         btn.textContent = t("checkoutPayNow").replace("{price}", money(quote().total));
       }
       state.paying = false;
+    } finally {
+      if (timer) clearTimeout(timer);
     }
   }
 
