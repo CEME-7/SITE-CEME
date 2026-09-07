@@ -1039,7 +1039,7 @@ const PRODUCTS = [
     "category": "frequencial",
     "volume": "avaliação",
     "price": 0.1,
-    "image": "assets/img/mapa-holografico.jpg",
+    "image": "assets/img/analise-campo-morfogenetico.jpg",
     "audio": null,
     "kind": "morfo",
     "tagline": "Leitura do campo morfogenético",

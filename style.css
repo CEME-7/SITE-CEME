@@ -732,6 +732,13 @@ section {
   aspect-ratio: 1 / 1;
   object-fit: cover;
 }
+#morfogenetico .cover-offer-media img,
+.card img[src*="analise-campo-morfogenetico"],
+.card-media img[src*="analise-campo-morfogenetico"] {
+  aspect-ratio: 11 / 6;
+  object-fit: contain;
+  background: #f4f1ea;
+}
 .cover-offer-body .price {
   margin: 16px 0;
 }
