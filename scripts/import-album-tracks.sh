@@ -21,18 +21,20 @@ mkdir -p "$DEST"
 
 # origem (nome aproximado no PC) : destino no repositório
 pairs=(
-  "Fluxo da Vida Fluir Dentro de mim 2:01-fluxo-da-vida-fluir-dentro-de-mim.mp3"
-  "Eu me perdoo:02-eu-me-perdoo.mp3"
-  "Expresse sua arte:03-expresse-sua-arte.mp3"
-  "A alma canta:04-a-alma-canta.mp3"
-  "Beleza da Alma Voltou a Cantar 2:05-beleza-da-alma-voltou-a-cantar.mp3"
-  "A música é a Chave:06-a-musica-e-a-chave.mp3"
-  "A música é a Chave:06-a-musica-e-a-chave.mp3"
-  "É preciso união:07-e-preciso-uniao.mp3"
-  "É preciso união:07-e-preciso-uniao.mp3"
-  "Déclic:08-declic.mp3"
-  "Declic:08-declic.mp3"
-  "Délclic:08-declic.mp3"
+  "Beleza da Alma Voltou a Cantar 2:01-beleza-da-alma-voltou-a-cantar.mp3"
+  "Beleza da Alma Voltou a Cantar:01-beleza-da-alma-voltou-a-cantar.mp3"
+  "A música é a Chave:02-a-musica-e-a-chave.mp3"
+  "A música é a Chave:02-a-musica-e-a-chave.mp3"
+  "É preciso união:03-e-preciso-uniao.mp3"
+  "É preciso união:03-e-preciso-uniao.mp3"
+  "Eu me perdoo:04-eu-me-perdoo.mp3"
+  "Déclic:05-declic.mp3"
+  "Declic:05-declic.mp3"
+  "Délclic:05-declic.mp3"
+  "Fluxo da Vida Fluir Dentro de mim 2:06-fluxo-da-vida-fluir-dentro-de-mim.mp3"
+  "Fluxo da Vida Fluir Dentro de mim:06-fluxo-da-vida-fluir-dentro-de-mim.mp3"
+  "Expresse sua arte:07-expresse-sua-arte.mp3"
+  "A alma canta:08-a-alma-canta.mp3"
 )
 
 find_source() {
@@ -81,14 +83,14 @@ for item in "${pairs[@]}"; do
 done
 
 expected=(
-  "01-fluxo-da-vida-fluir-dentro-de-mim.mp3"
-  "02-eu-me-perdoo.mp3"
-  "03-expresse-sua-arte.mp3"
-  "04-a-alma-canta.mp3"
-  "05-beleza-da-alma-voltou-a-cantar.mp3"
-  "06-a-musica-e-a-chave.mp3"
-  "07-e-preciso-uniao.mp3"
-  "08-declic.mp3"
+  "01-beleza-da-alma-voltou-a-cantar.mp3"
+  "02-a-musica-e-a-chave.mp3"
+  "03-e-preciso-uniao.mp3"
+  "04-eu-me-perdoo.mp3"
+  "05-declic.mp3"
+  "06-fluxo-da-vida-fluir-dentro-de-mim.mp3"
+  "07-expresse-sua-arte.mp3"
+  "08-a-alma-canta.mp3"
 )
 for f in "${expected[@]}"; do
   [[ -f "$DEST/$f" ]] || { echo "Falta $DEST/$f" >&2; exit 1; }
