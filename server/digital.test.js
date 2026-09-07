@@ -46,8 +46,13 @@ test("monta um ZIP válido com as faixas do álbum", () => {
   const albumZip = path.join(dir, album.zipName);
   fs.writeFileSync(albumZip, album.buffer);
   const albumList = execFileSync("unzip", ["-l", albumZip], { encoding: "utf8" });
-  assert.match(albumList, /01-faixa-1\.mp3/);
-  assert.match(albumList, /08-faixa-8\.mp3/);
-  assert.equal((albumList.match(/faixa-\d\.mp3/g) || []).length, 8);
+  assert.match(albumList, /01-fluxo-da-vida-fluir-dentro-de-mim\.mp3/);
+  assert.match(albumList, /08-declic\.mp3/);
+  assert.equal(
+    DIGITAL_PRODUCTS["musicas-neuroconectivas"].tracks.filter((track) =>
+      albumList.includes(track.file)
+    ).length,
+    8
+  );
   assert.equal(buildDigitalZip("nao-existe"), null);
 });
