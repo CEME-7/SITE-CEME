@@ -508,11 +508,10 @@ export function validatePayer(payer, { requireAddress = true, requireBirthDate =
   if (name.length < 3) errors.push("name");
   if (!isEmail(email)) errors.push("email");
   const emailConfirm = String(payer?.emailConfirm || "").trim().toLowerCase();
-  if (emailConfirm && emailConfirm !== email) errors.push("emailConfirm");
+  if (!emailConfirm || emailConfirm !== email) errors.push("emailConfirm");
   if (!isBrazilianMobile(phone)) errors.push("phone");
-  const phoneConfirmRaw = String(payer?.phoneConfirm || "").trim();
   const phoneConfirm = brazilianMobileDigits(payer?.phoneConfirm);
-  if (phoneConfirmRaw && phoneConfirm !== phone) errors.push("phoneConfirm");
+  if (!phoneConfirm || phoneConfirm !== phone) errors.push("phoneConfirm");
   if (requireBirthDate) {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(birthDate)) errors.push("birthDate");
     else {
