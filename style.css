@@ -748,6 +748,10 @@ section {
   object-fit: contain;
   background: #f4f1ea;
 }
+#neuroconexao .cover-offer-media img {
+  object-fit: contain;
+  background: #f4f1ea;
+}
 .cover-offer-body .price {
   margin: 16px 0;
 }
