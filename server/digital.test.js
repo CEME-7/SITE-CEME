@@ -49,11 +49,12 @@ test("monta um ZIP válido com as faixas do álbum", () => {
   assert.match(albumList, /01-beleza-da-alma-voltou-a-cantar\.mp3/);
   assert.match(albumList, /05-declic\.mp3/);
   assert.match(albumList, /08-a-alma-canta\.mp3/);
+  assert.match(albumList, /09-musica-tudo-cura\.mp3/);
   assert.equal(
     DIGITAL_PRODUCTS["musicas-neuroconectivas"].tracks.filter((track) =>
       albumList.includes(track.file)
     ).length,
-    8
+    9
   );
   assert.equal(buildDigitalZip("nao-existe"), null);
 });
