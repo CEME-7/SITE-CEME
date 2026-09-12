@@ -21,5 +21,7 @@
     mpPublicKey: "",
     maxInstallments: 3,
     freeShippingFrom: 360,
+    // Câmbio usado só para cobrar mentorias (US$) em reais no Mercado Pago.
+    usdBrlRate: 5.5,
   };
 })();

@@ -1242,6 +1242,144 @@ const PRODUCTS = [
         ]
       }
     }
+  },
+  {
+    "id": "mentoria-ciencia-do-amor",
+    "name": "Ciência do Amor",
+    "category": "mentoria",
+    "volume": "mentoria",
+    "price": 500,
+    "currency": "USD",
+    "image": "assets/img/familia-fundadores.jpg",
+    "audio": null,
+    "kind": "mentoria",
+    "tagline": "Conheça o Método CEME e torne-se parceiro de negócios globais",
+    "description": "Mentoria Ciência do Amor: conheça o Método CEME e torne-se parceiro de negócios globais. Encontros de formação e posicionamento para quem deseja levar o Ecossistema de Amor em Movimento ao mundo.",
+    "indications": [
+      "Mentoria online",
+      "Método CEME",
+      "Parceria de negócios globais",
+      "Sem frete"
+    ],
+    "i18n": {
+      "pt": {
+        "tagline": "Conheça o Método CEME e torne-se parceiro de negócios globais",
+        "description": "Mentoria Ciência do Amor: conheça o Método CEME e torne-se parceiro de negócios globais. Encontros de formação e posicionamento para quem deseja levar o Ecossistema de Amor em Movimento ao mundo.",
+        "indications": ["Mentoria online", "Método CEME", "Parceria de negócios globais", "Sem frete"]
+      },
+      "en": {
+        "tagline": "Learn the CEME Method and become a global business partner",
+        "description": "Science of Love mentorship: learn the CEME Method and become a global business partner. Training and positioning for those who want to take the Love in Motion Ecosystem to the world.",
+        "indications": ["Online mentorship", "CEME Method", "Global business partnership", "No shipping"]
+      },
+      "es": {
+        "tagline": "Conozca el Método CEME y hágase socio de negocios globales",
+        "description": "Mentoría Ciencia del Amor: conozca el Método CEME y hágase socio de negocios globales. Encuentros de formación y posicionamiento para quien desea llevar el Ecosistema de Amor en Movimiento al mundo.",
+        "indications": ["Mentoría online", "Método CEME", "Sociedad de negocios globales", "Sin envío"]
+      },
+      "de": {
+        "tagline": "Lernen Sie die CEME-Methode kennen und werden Sie globaler Geschäftspartner",
+        "description": "Mentoring Wissenschaft der Liebe: Lernen Sie die CEME-Methode kennen und werden Sie globaler Geschäftspartner. Ausbildung und Positionierung für alle, die das Ökosystem Liebe in Bewegung in die Welt tragen wollen.",
+        "indications": ["Online-Mentoring", "CEME-Methode", "Globale Geschäftspartnerschaft", "Kein Versand"]
+      },
+      "fr": {
+        "tagline": "Découvrez la Méthode CEME et devenez partenaire d’affaires mondial",
+        "description": "Mentorat Science de l’Amour : découvrez la Méthode CEME et devenez partenaire d’affaires mondial. Formation et positionnement pour ceux qui veulent porter l’Écosystème Amour en Mouvement dans le monde.",
+        "indications": ["Mentorat en ligne", "Méthode CEME", "Partenariat d’affaires mondial", "Sans livraison"]
+      }
+    }
+  },
+  {
+    "id": "mentoria-essencia-do-amor",
+    "name": "Essência do Amor",
+    "category": "mentoria",
+    "volume": "mentoria",
+    "price": 500,
+    "currency": "USD",
+    "image": "assets/img/livro-amor-proprio.jpg",
+    "audio": null,
+    "kind": "mentoria",
+    "tagline": "Reconecte-se à sua essência com o livro amor-próprio",
+    "description": "Mentoria Essência do Amor: reconecte-se à sua essência com o livro amor-próprio. Um caminho guiado de autoconhecimento e presença para cultivar o amor que move o Método CEME.",
+    "indications": [
+      "Mentoria online",
+      "Amor-próprio",
+      "Reconexão com a essência",
+      "Sem frete"
+    ],
+    "i18n": {
+      "pt": {
+        "tagline": "Reconecte-se à sua essência com o livro amor-próprio",
+        "description": "Mentoria Essência do Amor: reconecte-se à sua essência com o livro amor-próprio. Um caminho guiado de autoconhecimento e presença para cultivar o amor que move o Método CEME.",
+        "indications": ["Mentoria online", "Amor-próprio", "Reconexão com a essência", "Sem frete"]
+      },
+      "en": {
+        "tagline": "Reconnect to your essence with the self-love book",
+        "description": "Essence of Love mentorship: reconnect to your essence with the self-love book. A guided path of self-knowledge and presence to cultivate the love that moves the CEME Method.",
+        "indications": ["Online mentorship", "Self-love", "Reconnect to essence", "No shipping"]
+      },
+      "es": {
+        "tagline": "Reconéctese a su esencia con el libro de amor propio",
+        "description": "Mentoría Esencia del Amor: reconéctese a su esencia con el libro de amor propio. Un camino guiado de autoconocimiento y presencia para cultivar el amor que mueve el Método CEME.",
+        "indications": ["Mentoría online", "Amor propio", "Reconexión con la esencia", "Sin envío"]
+      },
+      "de": {
+        "tagline": "Verbinden Sie sich mit Ihrer Essenz über das Buch Selbstliebe",
+        "description": "Mentoring Essenz der Liebe: Verbinden Sie sich mit Ihrer Essenz über das Buch Selbstliebe. Ein geführter Weg der Selbsterkenntnis und Präsenz, um die Liebe zu pflegen, die die CEME-Methode bewegt.",
+        "indications": ["Online-Mentoring", "Selbstliebe", "Verbindung zur Essenz", "Kein Versand"]
+      },
+      "fr": {
+        "tagline": "Reconnectez-vous à votre essence avec le livre amour-propre",
+        "description": "Mentorat Essence de l’Amour : reconnectez-vous à votre essence avec le livre amour-propre. Un chemin guidé de connaissance de soi et de présence pour cultiver l’amour qui anime la Méthode CEME.",
+        "indications": ["Mentorat en ligne", "Amour-propre", "Reconnexion à l’essence", "Sans livraison"]
+      }
+    }
+  },
+  {
+    "id": "mentoria-declic-arte-do-amor",
+    "name": "Mentoria Déclic — Arte do Amor",
+    "category": "mentoria",
+    "volume": "mentoria",
+    "price": 2222,
+    "currency": "USD",
+    "image": "assets/img/declic-liberte-sua-expressao.jpg",
+    "audio": null,
+    "kind": "mentoria",
+    "tagline": "Seja o artista que expressa a verdade da alma e se apresente em palcos internacionais",
+    "description": "Mentoria Déclic — Arte do Amor: seja o artista que expressa a verdade da alma e se apresente em palcos internacionais. Formação artística e vibracional para liberar a expressão e ocupar o mundo com a sua arte.",
+    "indications": [
+      "Mentoria online",
+      "Expressão artística",
+      "Palcos internacionais",
+      "Sem frete"
+    ],
+    "i18n": {
+      "pt": {
+        "tagline": "Seja o artista que expressa a verdade da alma e se apresente em palcos internacionais",
+        "description": "Mentoria Déclic — Arte do Amor: seja o artista que expressa a verdade da alma e se apresente em palcos internacionais. Formação artística e vibracional para liberar a expressão e ocupar o mundo com a sua arte.",
+        "indications": ["Mentoria online", "Expressão artística", "Palcos internacionais", "Sem frete"]
+      },
+      "en": {
+        "tagline": "Be the artist who expresses the truth of the soul and perform on international stages",
+        "description": "Déclic — Art of Love mentorship: be the artist who expresses the truth of the soul and perform on international stages. Artistic and vibrational training to free expression and bring your art to the world.",
+        "indications": ["Online mentorship", "Artistic expression", "International stages", "No shipping"]
+      },
+      "es": {
+        "tagline": "Sea el artista que expresa la verdad del alma y se presente en escenarios internacionales",
+        "description": "Mentoría Déclic — Arte del Amor: sea el artista que expresa la verdad del alma y se presente en escenarios internacionales. Formación artística y vibracional para liberar la expresión y ocupar el mundo con su arte.",
+        "indications": ["Mentoría online", "Expresión artística", "Escenarios internacionales", "Sin envío"]
+      },
+      "de": {
+        "tagline": "Seien Sie der Künstler, der die Wahrheit der Seele ausdrückt, und treten Sie auf internationalen Bühnen auf",
+        "description": "Mentoring Déclic — Kunst der Liebe: Seien Sie der Künstler, der die Wahrheit der Seele ausdrückt, und treten Sie auf internationalen Bühnen auf. Künstlerische und vibrationale Ausbildung, um Ausdruck zu befreien und die Welt mit Ihrer Kunst zu betreten.",
+        "indications": ["Online-Mentoring", "Künstlerischer Ausdruck", "Internationale Bühnen", "Kein Versand"]
+      },
+      "fr": {
+        "tagline": "Soyez l’artiste qui exprime la vérité de l’âme et présentez-vous sur des scènes internationales",
+        "description": "Mentorat Déclic — Art de l’Amour : soyez l’artiste qui exprime la vérité de l’âme et présentez-vous sur des scènes internationales. Formation artistique et vibratoire pour libérer l’expression et porter votre art dans le monde.",
+        "indications": ["Mentorat en ligne", "Expression artistique", "Scènes internationales", "Sans livraison"]
+      }
+    }
   }
 
 ];

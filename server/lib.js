@@ -4,6 +4,17 @@ import { publicDigitalDownloads } from "./digital.js";
 export const MAX_QTY = 20;
 export const MIN_INSTALLMENT = 20;
 export const FREE_SHIPPING_FROM = 360;
+export const USD_BRL_RATE = Number(process.env.USD_BRL_RATE || 5.5);
+
+export function unitPriceBrl(product) {
+  const value = Number(product?.price) || 0;
+  const currency = String(product?.currency || "BRL").toUpperCase();
+  if (currency === "USD") {
+    const rate = Number(process.env.USD_BRL_RATE || USD_BRL_RATE);
+    return value * (Number.isFinite(rate) && rate > 0 ? rate : 5.5);
+  }
+  return value;
+}
 
 /** demo = API local sem Mercado Pago; sandbox = credenciais TEST; live = produção. */
 export function paymentMode({ accessToken = "", demoPayments, testMode } = {}) {
@@ -162,8 +173,9 @@ export function catalogMap(products) {
       id: product.id,
       name: product.name,
       volume: product.volume,
-      price: Number(product.price),
+      price: unitPriceBrl(product),
       kind: product.kind || "spray",
+      currency: String(product.currency || "BRL").toUpperCase(),
     });
   }
   return map;
