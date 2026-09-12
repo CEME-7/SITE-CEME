@@ -1108,7 +1108,7 @@ const PRODUCTS = [
     "name": "Déclic — Liberte sua Expressão",
     "category": "frequencial",
     "volume": "digital",
-    "price": 64,
+    "price": 72,
     "image": "assets/img/declic-liberte-sua-expressao.jpg",
     "audio": null,
     "kind": "musica",
