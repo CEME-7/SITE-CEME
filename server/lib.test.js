@@ -335,6 +335,21 @@ test("modo da API: demo sem token, sandbox com TEST- e live com token de produç
   );
 });
 
+
+test("mentorias em USD convertem para BRL no orçamento", () => {
+  const rate = 5.5;
+  process.env.USD_BRL_RATE = String(rate);
+  const quote = quoteCart(
+    PRODUCTS,
+    [{ id: "mentoria-ciencia-do-amor", qty: 1 }],
+    { shippingMethod: "none" }
+  );
+  assert.equal(quote.lines[0].unitPrice, 500 * rate);
+  assert.equal(quote.subtotal, 500 * rate);
+  assert.equal(quote.shipping, 0);
+  assert.equal(quote.hasPhysical, false);
+});
+
 test("catálogo oficial tem 15 sprays e extras compráveis", () => {
   const sprays = PRODUCTS.filter((p) => !p.kind || p.kind === "spray");
   assert.equal(sprays.length, 15);

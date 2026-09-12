@@ -44,15 +44,35 @@
       .replace(/'/g, "&#39;");
   }
 
-  function money(amountBrl) {
-    return Number(amountBrl).toLocaleString(LOCALES[state.lang] || "pt-BR", {
+  function money(amount, currency = "BRL") {
+    const cur = currency === "USD" ? "USD" : "BRL";
+    return Number(amount).toLocaleString(LOCALES[state.lang] || "pt-BR", {
       style: "currency",
-      currency: "BRL",
+      currency: cur,
     });
   }
 
+  function usdBrlRate() {
+    const rate = Number(window.CEME_CHECKOUT && window.CEME_CHECKOUT.usdBrlRate);
+    return Number.isFinite(rate) && rate > 0 ? rate : 5.5;
+  }
+
+  function productCurrency(p) {
+    return p && String(p.currency || "BRL").toUpperCase() === "USD" ? "USD" : "BRL";
+  }
+
+  function productPriceBrl(p) {
+    if (!p) return 0;
+    const value = Number(p.price) || 0;
+    return productCurrency(p) === "USD" ? value * usdBrlRate() : value;
+  }
+
+  function productPriceLabel(p) {
+    return money(p.price, productCurrency(p));
+  }
+
   function moneyForWhatsApp(amountBrl) {
-    return money(amountBrl);
+    return money(amountBrl, "BRL");
   }
 
   function renderAlbumPrice() {
@@ -161,7 +181,7 @@
   function cartTotal() {
     return state.cart.reduce((sum, item) => {
       const p = PRODUCTS.find((x) => x.id === item.id);
-      return sum + (p ? p.price * item.qty : 0);
+      return sum + (p ? productPriceBrl(p) * item.qty : 0);
     }, 0);
   }
 
@@ -190,7 +210,7 @@
     if (!state.cart.length) return;
     const lines = state.cart.map((item) => {
       const p = PRODUCTS.find((x) => x.id === item.id);
-      return `• ${p.name} (${p.volume}) x${item.qty} — ${moneyForWhatsApp(p.price * item.qty)}`;
+      return `• ${p.name} (${p.volume}) x${item.qty} — ${money(p.price * item.qty, productCurrency(p))}`;
     });
     const text = [
       t("waHelloBuy"),
@@ -269,7 +289,7 @@
           <span class="pill">${escapeHtml(p.categoryLabel)} · ${escapeHtml(p.volume)}</span>
           <h3>${escapeHtml(p.name)}</h3>
           <p class="tagline">${escapeHtml(p.tagline)}</p>
-          <p class="price">${escapeHtml(money(p.price))}</p>
+          <p class="price">${escapeHtml(productPriceLabel(p))}</p>
           ${audioBlock}
           ${actions}
         </div>
@@ -302,6 +322,7 @@
 
   function renderExtras() {
     renderSoloSection("#morfo-grid", "morfo");
+    renderSoloSection("#mentorias-grid", "mentoria");
   }
 
   function renderFilters() {
@@ -327,7 +348,7 @@
     $("#modal-img").alt = p.name;
     $("#modal-name").textContent = p.name;
     $("#modal-tag").textContent = p.tagline;
-    $("#modal-price").textContent = money(p.price);
+    $("#modal-price").textContent = productPriceLabel(p);
     $("#modal-desc").textContent = p.description;
     $("#modal-indications").innerHTML = p.indications.map((i) => `<li>${escapeHtml(i)}</li>`).join("");
     $("#modal-add").dataset.add = p.id;
@@ -354,6 +375,7 @@
       if (p.kind === "morfo") usage.textContent = t("morfoUsage");
       else if (p.kind === "musica") usage.textContent = t("musicaUsage");
       else if (p.kind === "neuro") usage.textContent = t("neuroUsage");
+      else if (p.kind === "mentoria") usage.textContent = t("mentoriaUsage");
       else usage.textContent = t("usageHint");
     }
     modal.hidden = false;
@@ -402,7 +424,7 @@
             <img src="${escapeHtml(p.image)}" alt="">
             <div>
               <strong>${escapeHtml(p.name)}</strong>
-              <span>${escapeHtml(money(p.price))}</span>
+              <span>${escapeHtml(money(p.price * item.qty, productCurrency(p)))}</span>
               <div class="qty">
                 <button type="button" data-qty-minus="${escapeHtml(p.id)}" aria-label="${escapeHtml(t("decrease"))}">−</button>
                 <input type="number" min="1" value="${Number(item.qty)}" data-qty="${escapeHtml(p.id)}" aria-label="${escapeHtml(t("qtyOf"))} ${escapeHtml(p.name)}">
