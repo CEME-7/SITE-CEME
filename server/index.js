@@ -784,7 +784,7 @@ async function bootStore() {
   }
 }
 
-console.log('ceme_deploy_stamp', '2026-09-12-espaco-fundadores');
+console.log('ceme_deploy_stamp', '2026-09-12-espaco-neuroconexao');
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`Loja CEME em http://127.0.0.1:${PORT}  (mode=${MODE}, storage=${ordersBackend()}, durable=${ordersDurable()})`);
   void bootStore();

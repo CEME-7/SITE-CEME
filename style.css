@@ -769,6 +769,17 @@ section {
   object-fit: contain;
   background: #f4f1ea;
 }
+#neuroconexao .cover-offer-body > p {
+  margin: 0 0 18px;
+  line-height: 1.75;
+}
+#neuroconexao .cover-offer-body > p.lead {
+  margin-bottom: 20px;
+  line-height: 1.7;
+}
+#neuroconexao .cover-offer-body > .btn {
+  margin-top: 8px;
+}
 .cover-offer-body .price {
   margin: 16px 0;
 }
