@@ -1112,60 +1112,60 @@ const PRODUCTS = [
     "image": "assets/img/declic-liberte-sua-expressao.jpg",
     "audio": null,
     "kind": "musica",
-    "tagline": "Álbum digital · 8 faixas",
-    "description": "Déclic — Liberte sua Expressão: oito faixas num álbum só, para ouvir e comprar neste site. O disco completo libera depois do pagamento aprovado.",
+    "tagline": "Álbum digital · 9 faixas",
+    "description": "Déclic — Liberte sua Expressão: nove faixas num álbum só, para ouvir e comprar neste site. O disco completo libera depois do pagamento aprovado.",
     "indications": [
-      "8 faixas no mesmo álbum",
+      "9 faixas no mesmo álbum",
       "Prévia curta na loja",
       "Download após o pagamento",
       "Sem faixa avulsa"
     ],
     "i18n": {
       "pt": {
-        "tagline": "Álbum digital · 8 faixas",
-        "description": "Déclic — Liberte sua Expressão: oito faixas num álbum só, para ouvir e comprar neste site. O disco completo libera depois do pagamento aprovado.",
+        "tagline": "Álbum digital · 9 faixas",
+        "description": "Déclic — Liberte sua Expressão: nove faixas num álbum só, para ouvir e comprar neste site. O disco completo libera depois do pagamento aprovado.",
         "indications": [
-          "8 faixas no mesmo álbum",
+          "9 faixas no mesmo álbum",
           "Prévia curta na loja",
           "Download após o pagamento",
           "Sem faixa avulsa"
         ]
       },
       "en": {
-        "tagline": "Digital album · 8 tracks",
-        "description": "Déclic — Liberte sua Expressão: eight tracks in one album, to listen and buy on this site. The full record unlocks after approved payment.",
+        "tagline": "Digital album · 9 tracks",
+        "description": "Déclic — Liberte sua Expressão: nine tracks in one album, to listen and buy on this site. The full record unlocks after approved payment.",
         "indications": [
-          "8 tracks in one album",
+          "9 tracks in one album",
           "Short preview in the shop",
           "Download after payment",
           "No single-track sale"
         ]
       },
       "de": {
-        "tagline": "Digitales Album · 8 Titel",
-        "description": "Déclic — Liberte sua Expressão: acht Titel in einem Album, zum Hören und Kaufen auf dieser Website. Die volle Platte erscheint nach bestätigter Zahlung.",
+        "tagline": "Digitales Album · 9 Titel",
+        "description": "Déclic — Liberte sua Expressão: neun Titel in einem Album, zum Hören und Kaufen auf dieser Website. Die volle Platte erscheint nach bestätigter Zahlung.",
         "indications": [
-          "8 Titel in einem Album",
+          "9 Titel in einem Album",
           "Kurze Vorschau im Shop",
           "Download nach der Zahlung",
           "Ohne Einzelverkauf"
         ]
       },
       "es": {
-        "tagline": "Álbum digital · 8 pistas",
-        "description": "Déclic — Liberte sua Expressão: ocho pistas en un solo álbum, para escuchar y comprar en este sitio. El disco completo se libera tras el pago aprobado.",
+        "tagline": "Álbum digital · 9 pistas",
+        "description": "Déclic — Liberte sua Expressão: nueve pistas en un solo álbum, para escuchar y comprar en este sitio. El disco completo se libera tras el pago aprobado.",
         "indications": [
-          "8 pistas en el mismo álbum",
+          "9 pistas en el mismo álbum",
           "Previa corta en la tienda",
           "Descarga tras el pago",
           "Sin pista suelta"
         ]
       },
       "fr": {
-        "tagline": "Album numérique · 8 titres",
-        "description": "Déclic — Liberte sua Expressão : huit titres dans un seul album, à écouter et acheter sur ce site. Le disque complet se débloque après le paiement approuvé.",
+        "tagline": "Album numérique · 9 titres",
+        "description": "Déclic — Liberte sua Expressão : neuf titres dans un seul album, à écouter et acheter sur ce site. Le disque complet se débloque après le paiement approuvé.",
         "indications": [
-          "8 titres dans le même album",
+          "9 titres dans le même album",
           "Extrait court dans la boutique",
           "Téléchargement après le paiement",
           "Sans titre à l’unité"

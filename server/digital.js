@@ -19,6 +19,7 @@ export const DIGITAL_PRODUCTS = {
       { file: "06-fluxo-da-vida-fluir-dentro-de-mim.mp3", title: "Fluxo da Vida Fluir Dentro de Mim" },
       { file: "07-expresse-sua-arte.mp3", title: "Expresse Sua Arte" },
       { file: "08-a-alma-canta.mp3", title: "A Alma Canta" },
+      { file: "09-musica-tudo-cura.mp3", title: "Música Tudo Cura" },
     ],
   },
 };

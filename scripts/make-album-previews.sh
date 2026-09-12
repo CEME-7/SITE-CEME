@@ -16,14 +16,15 @@ fi
 
 mkdir -p "$OUT"
 tracks=(
-  "1:01-faixa-1.mp3"
-  "2:02-faixa-2.mp3"
-  "3:03-faixa-3.mp3"
-  "4:04-faixa-4.mp3"
-  "5:05-faixa-5.mp3"
-  "6:06-faixa-6.mp3"
-  "7:07-faixa-7.mp3"
-  "8:08-faixa-8.mp3"
+  "1:01-beleza-da-alma-voltou-a-cantar.mp3"
+  "2:02-a-musica-e-a-chave.mp3"
+  "3:03-e-preciso-uniao.mp3"
+  "4:04-eu-me-perdoo.mp3"
+  "5:05-declic.mp3"
+  "6:06-fluxo-da-vida-fluir-dentro-de-mim.mp3"
+  "7:07-expresse-sua-arte.mp3"
+  "8:08-a-alma-canta.mp3"
+  "9:09-musica-tudo-cura.mp3"
 )
 
 for item in "${tracks[@]}"; do

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Importa as 8 faixas do álbum Déclic a partir da pasta Downloads (ou outra).
+# Importa as 9 faixas do álbum Déclic a partir da pasta Downloads (ou outra).
 # Uso: bash scripts/import-album-tracks.sh "c:/Users/SUPORTE/Downloads"
 set -euo pipefail
 
@@ -35,6 +35,8 @@ pairs=(
   "Fluxo da Vida Fluir Dentro de mim:06-fluxo-da-vida-fluir-dentro-de-mim.mp3"
   "Expresse sua arte:07-expresse-sua-arte.mp3"
   "A alma canta:08-a-alma-canta.mp3"
+  "Música tudo cura:09-musica-tudo-cura.mp3"
+  "Musica tudo cura:09-musica-tudo-cura.mp3"
 )
 
 find_source() {
@@ -91,11 +93,12 @@ expected=(
   "06-fluxo-da-vida-fluir-dentro-de-mim.mp3"
   "07-expresse-sua-arte.mp3"
   "08-a-alma-canta.mp3"
+  "09-musica-tudo-cura.mp3"
 )
 for f in "${expected[@]}"; do
   [[ -f "$DEST/$f" ]] || { echo "Falta $DEST/$f" >&2; exit 1; }
 done
 
 echo ""
-echo "OK: 8 faixas em $DEST"
+echo "OK: 9 faixas em $DEST"
 echo "Próximo passo: bash scripts/make-album-previews.sh"
