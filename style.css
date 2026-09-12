@@ -948,6 +948,33 @@ section {
   gap: 8px;
   flex: 1;
 }
+.card-text .card-body {
+  padding-top: 22px;
+}
+.card-title-btn {
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-weight: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.card-title-btn:hover,
+.card-title-btn:focus-visible {
+  color: var(--maroon);
+  outline: none;
+}
+.modal-no-media .modal-panel {
+  grid-template-columns: 1fr;
+}
+.modal-no-media #modal-img[hidden] {
+  display: none !important;
+}
 .pill {
   font-size: 0.72rem;
   letter-spacing: 0.08em;
