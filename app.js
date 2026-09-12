@@ -280,14 +280,22 @@
             <button class="btn btn-ghost" type="button" data-add="${escapeHtml(p.id)}">${escapeHtml(t("add"))}</button>
             <button class="btn btn-gold" type="button" data-buy="${escapeHtml(p.id)}">${escapeHtml(t("buy"))}</button>
           </div>`;
-    return `
-      <article class="card" data-id="${escapeHtml(p.id)}" data-category="${escapeHtml(p.category)}">
-        <button class="card-media" type="button" data-open="${escapeHtml(p.id)}" aria-label="${escapeHtml(t("detailsOf"))} ${escapeHtml(p.name)}">
+    const media =
+      p.kind === "mentoria"
+        ? ""
+        : `<button class="card-media" type="button" data-open="${escapeHtml(p.id)}" aria-label="${escapeHtml(t("detailsOf"))} ${escapeHtml(p.name)}">
           <img src="${escapeHtml(p.image)}" alt="${escapeHtml(p.name)} — ${escapeHtml(p.tagline)}" loading="lazy" width="900" height="1272">
-        </button>
+        </button>`;
+    const title =
+      p.kind === "mentoria"
+        ? `<h3><button class="card-title-btn" type="button" data-open="${escapeHtml(p.id)}">${escapeHtml(p.name)}</button></h3>`
+        : `<h3>${escapeHtml(p.name)}</h3>`;
+    return `
+      <article class="card ${p.kind === "mentoria" ? "card-text" : ""}" data-id="${escapeHtml(p.id)}" data-category="${escapeHtml(p.category)}">
+        ${media}
         <div class="card-body">
           <span class="pill">${escapeHtml(p.categoryLabel)} · ${escapeHtml(p.volume)}</span>
-          <h3>${escapeHtml(p.name)}</h3>
+          ${title}
           <p class="tagline">${escapeHtml(p.tagline)}</p>
           <p class="price">${escapeHtml(productPriceLabel(p))}</p>
           ${audioBlock}
@@ -344,8 +352,18 @@
     closeCart();
     const modal = $("#product-modal");
     modal.dataset.openId = id;
-    $("#modal-img").src = p.image;
-    $("#modal-img").alt = p.name;
+    const modalImg = $("#modal-img");
+    if (p.kind === "mentoria") {
+      modalImg.hidden = true;
+      modalImg.removeAttribute("src");
+      modalImg.alt = "";
+      modal.classList.add("modal-no-media");
+    } else {
+      modalImg.hidden = false;
+      modalImg.src = p.image;
+      modalImg.alt = p.name;
+      modal.classList.remove("modal-no-media");
+    }
     $("#modal-name").textContent = p.name;
     $("#modal-tag").textContent = p.tagline;
     $("#modal-price").textContent = productPriceLabel(p);
